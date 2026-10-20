@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import badge, progress, timeline %}
+{% block title %}Track a request · HudumaLink{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>Track a request</h1><p class="muted" style="margin:.3rem 0 0">Enter the tracking number you received when you submitted your request.</p></div></div>
+<div class="wrap section" style="max-width:820px">
+  <form method="get" class="row" style="flex-wrap:nowrap">
+    <input name="ref" value="{{ reference }}" placeholder="HL-261020-9F3A1C" aria-label="Tracking number" required>
+    <button class="btn btn-primary" type="submit">Track</button>
+  </form>
+
+  {% if reference and not item %}
+    <div class="flash error">No request was found with the number “{{ reference }}”. Check it and try again.</div>
+  {% elif item %}
+    <div class="card" style="margin-top:1.5rem">
+      <div class="row between"><div><span class="muted small">{{ item.reference }}</span><h2 style="margin:0">{{ item.subject }}</h2></div>{{ badge(item.status) }}</div>
+      {{ progress(item.status) }}
+      <dl class="kv">
+        <dt>Service</dt><dd>{{ item.category }}</dd>
+        <dt>Department</dt><dd>{{ item.department }}</dd>
+        <dt>Sub-county</dt><dd>{{ item.sub_county }}</dd>
+        <dt>Submitted</dt><dd>{{ item.created_at|datetime }}</dd>
+        {% if item.public_note %}<dt>Latest update</dt><dd>{{ item.public_note }}</dd>{% endif %}
+      </dl>
+      <h3 style="margin-top:1.5rem">Progress history</h3>
+      {{ timeline(history|reverse|list, show_actor=False) }}
+      <p class="muted small">Want full details or to rate this service? <a href="{{ url_for('auth.login', next=url_for('citizen.detail', request_id=item.id)) }}">Sign in</a>.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

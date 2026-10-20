@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} · HudumaLink{% endblock %}
+{% block content %}
+<div class="wrap error-page">
+  <b>{{ code }}</b>
+  <h1>Something went wrong</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="btn btn-primary" href="{{ url_for('public.home') }}">Back to the home page</a>
+</div>
+{% endblock %}

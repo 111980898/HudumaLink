@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}My profile · HudumaLink{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>My profile</h1></div></div>
+<div class="wrap section" style="padding-top:2rem"><div class="grid cols-2">
+  <div class="card"><h3>Account</h3><dl class="kv">
+    <dt>Name</dt><dd>{{ user.full_name }}</dd><dt>Email</dt><dd>{{ user.email }}</dd>
+    <dt>Phone</dt><dd>{{ user.phone or '—' }}</dd><dt>Sub-county</dt><dd>{{ user.sub_county or '—' }}</dd>
+    <dt>Member since</dt><dd>{{ user.created_at|date }}</dd>
+    <dt>Requests</dt><dd>{{ stats.total }} filed · {{ stats.resolved }} resolved</dd></dl></div>
+  <form class="card" method="post" data-once><h3>Change password</h3>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="current_password">Current password</label><input id="current_password" name="current_password" type="password" autocomplete="current-password" required></div>
+    <div class="field"><label for="new_password">New password</label><input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8" required></div>
+    <button class="btn btn-primary" type="submit">Update password</button></form>
+</div></div>
+{% endblock %}

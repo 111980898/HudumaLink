@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import badge %}
+{% block content %}
+
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="eyebrow">Murang'a County · Service Delivery</span>
+    <h1>Report it. Track it. See it fixed.</h1>
+    <p class="lead">Broken streetlight, dry tap or uncollected garbage? Tell the county in two minutes and follow your request until the problem is resolved.</p>
+    <div class="row">
+      <a class="btn btn-light" href="{{ url_for('citizen.new_request') }}">Report a problem →</a>
+      <a class="btn btn-ghost" style="color:#fff;border-color:#fff" href="{{ url_for('public.services_page') }}">Browse services</a>
+    </div>
+  </div>
+  <div class="track-box">
+    <h3>Track a request</h3>
+    <p class="muted small">Enter your tracking number — no sign-in needed.</p>
+    <form action="{{ url_for('public.track') }}" method="get">
+      <input name="ref" placeholder="e.g. HL-261020-9F3A1C" aria-label="Tracking number" required>
+      <button class="btn btn-primary" type="submit">Track</button>
+    </form>
+  </div>
+</div></section>
+
+<section class="stat-strip"><div class="wrap"><div class="card"><div class="grid cols-4 keep2">
+  <div class="stat"><b>{{ stats.total }}</b><span>Requests received</span></div>
+  <div class="stat"><b>{{ stats.open }}</b><span>Open cases</span></div>
+  <div class="stat"><b>{{ stats.resolution_rate }}%</b><span>Resolved</span></div>
+  <div class="stat"><b>{{ stats.avg_days if stats.avg_days is not none else '—' }}{% if stats.avg_days is not none %}<small style="font-size:1rem"> days</small>{% endif %}</b><span>Average time to resolve</span></div>
+</div></div></div></section>
+
+<section class="section"><div class="wrap">
+  <div class="section-head"><span class="eyebrow">What can we help with?</span><h2>County services at your fingertips</h2></div>
+  <div class="grid cols-3">
+    {% for name, info in CATEGORIES.items() %}
+      <a class="card service-card" href="{{ url_for('citizen.new_request', category=name) }}">
+        <div class="ico">{{ info.icon }}</div>
+        <h3>{{ name }}</h3>
+        <p class="muted small">Handled by {{ info.department }} · target {{ info.sla_days }} days</p>
+      </a>
+    {% endfor %}
+  </div>
+</div></section>
+
+<section class="section" style="padding-top:0"><div class="wrap">
+  <div class="section-head"><span class="eyebrow">How it works</span><h2>From report to resolution in three steps</h2></div>
+  <div class="grid cols-3 steps-num">
+    <div class="card"><h3>Report</h3><p class="muted">Pick a category, mark the location and add a photo. You receive a unique tracking number instantly.</p></div>
+    <div class="card"><h3>Review &amp; assign</h3><p class="muted">Staff route your request to the right department and set its priority against a service target.</p></div>
+    <div class="card"><h3>Resolve &amp; rate</h3><p class="muted">You are notified at every step. When the work is done, rate the service to help us improve.</p></div>
+  </div>
+</div></section>
+
+{% if recent %}
+<section class="section" style="padding-top:0"><div class="wrap">
+  <div class="row between"><div class="section-head" style="margin:0"><span class="eyebrow">Live activity</span><h2>Recent updates across the county</h2></div></div>
+  <div class="table-wrap" style="margin-top:1.2rem"><table>
+    <thead><tr><th>Reference</th><th>Service</th><th>Sub-county</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>{% for r in recent %}
+      <tr><td><a class="ref" href="{{ url_for('public.track', ref=r.reference) }}">{{ r.reference }}</a></td>
+          <td>{{ r.category }}<div class="muted small">{{ r.subject }}</div></td>
+          <td>{{ r.sub_county }}</td><td>{{ badge(r.status) }}</td><td class="muted">{{ r.updated_at|ago }}</td></tr>
+    {% endfor %}</tbody></table></div>
+  <p class="muted small">Only the reference, service, sub-county and status are shown publicly — never names or contact details.</p>
+</div></section>
+{% endif %}
+
+<section class="wrap"><div class="cta-band">
+  <div><h2>Ready to make your ward better?</h2>
+    <p style="margin:0">{% if satisfaction.average %}Residents rate our resolved cases {{ satisfaction.average }}/5 on average.{% else %}Create a free account and file your first request today.{% endif %}</p></div>
+  <a class="btn btn-light" href="{{ url_for('auth.register') }}">Create a free account</a>
+</div></section>
+{% endblock %}

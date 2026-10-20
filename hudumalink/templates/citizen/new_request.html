@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Report a problem · HudumaLink{% endblock %}
+{% block content %}
+{% set chosen = form.category or request.args.get('category', '') %}
+<div class="page-head"><div class="wrap"><h1>Report a problem</h1><p class="muted" style="margin:.3rem 0 0">The more detail you give, the faster the right team can act.</p></div></div>
+<div class="wrap section" style="max-width:760px">
+  <form class="card" method="post" enctype="multipart/form-data" data-once>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="two-col">
+      <div class="field"><label for="category">Service category</label>
+        <select id="category" name="category" required><option value="">Choose…</option>
+          {% for name in CATEGORIES %}<option {{ 'selected' if chosen == name }}>{{ name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="sub_county">Sub-county</label>
+        <select id="sub_county" name="sub_county" required><option value="">Choose…</option>
+          {% for s in SUB_COUNTIES %}<option {{ 'selected' if (form.sub_county or session.get('sub_county')) == s }}>{{ s }}</option>{% endfor %}</select></div>
+    </div>
+
+    <div class="field"><label for="subject">Short title <span class="hint">e.g. “No water since Monday”</span></label>
+      <input id="subject" name="subject" maxlength="100" value="{{ form.subject }}" required></div>
+
+    <div class="field"><label for="location">Exact location <span class="hint">street, landmark or estate</span></label>
+      <div class="row" style="flex-wrap:nowrap"><input id="location" name="location" value="{{ form.location }}" required>
+        <button class="btn btn-ghost btn-sm" type="button" id="use-gps" style="white-space:nowrap">📍 Use my location</button></div></div>
+
+    <div class="field"><label for="description">Describe the problem</label>
+      <textarea id="description" name="description" maxlength="1500" data-max="1500" required>{{ form.description }}</textarea>
+      <div class="char-count" id="description-count"></div></div>
+
+    <div class="field"><label>How urgent is it?</label>
+      <div class="priority-pick">{% for p in PRIORITIES %}
+        <label><input type="radio" name="priority" value="{{ p }}" {{ 'checked' if (form.priority or 'Normal') == p }}><span>{{ p }}</span></label>{% endfor %}</div></div>
+
+    <div class="field"><label for="image">Photo <span class="hint">optional · PNG, JPG, GIF, WEBP · max 5 MB</span></label>
+      <div class="dropzone"><input id="image" name="image" type="file" accept="image/png,image/jpeg,image/gif,image/webp"><div id="image-preview"></div></div></div>
+
+    <button class="btn btn-primary" type="submit">Submit request</button>
+  </form>
+</div>
+{% endblock %}

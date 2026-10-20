@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Create account · HudumaLink{% endblock %}
+{% block content %}
+<div class="wrap"><div class="card form-card">
+  <h1 style="font-size:1.8rem">Create your account</h1>
+  <p class="muted">It takes under a minute and lets you track every request you make.</p>
+  <form method="post" data-once>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" value="{{ form.full_name }}" autocomplete="name" required></div>
+    <div class="two-col">
+      <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" value="{{ form.email }}" autocomplete="email" required></div>
+      <div class="field"><label for="phone">Phone <span class="hint">(optional)</span></label><input id="phone" name="phone" value="{{ form.phone }}" placeholder="0712345678" autocomplete="tel"></div>
+    </div>
+    <div class="field"><label for="sub_county">Your sub-county</label>
+      <select id="sub_county" name="sub_county" required><option value="">Choose…</option>
+        {% for s in SUB_COUNTIES %}<option {{ 'selected' if form.sub_county == s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="password">Password <span class="hint">8+ characters with letters and numbers</span></label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+    <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Create account</button>
+  </form>
+  <p class="muted small" style="margin-top:1rem">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+</div></div>
+{% endblock %}

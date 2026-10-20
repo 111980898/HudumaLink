@@ -1,0 +1,42 @@
+{# Small reusable template pieces ("macros"), imported where needed. #}
+
+{% macro badge(status) -%}
+  <span class="badge {{ status|slug }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro priority(p) -%}
+  <span class="pri {{ p|lower }}">{{ p }}</span>
+{%- endmacro %}
+
+{# Four-step progress tracker: Submitted → In progress → Resolved #}
+{% macro progress(status) -%}
+  {% set rank = {'Pending': 1, 'In Progress': 2, 'Resolved': 3, 'Rejected': 3}[status] %}
+  <div class="progress" aria-label="Progress: {{ status }}">
+    <div class="step done"><div class="dot">✓</div>Submitted</div>
+    <div class="step {{ 'done' if rank >= 2 }}"><div class="dot">{{ '✓' if rank >= 2 else '2' }}</div>In progress</div>
+    <div class="step {{ 'done' if status == 'Resolved' }} {{ 'rejected' if status == 'Rejected' }}">
+      <div class="dot">{{ '✕' if status == 'Rejected' else ('✓' if status == 'Resolved' else '3') }}</div>
+      {{ 'Rejected' if status == 'Rejected' else 'Resolved' }}
+    </div>
+  </div>
+{%- endmacro %}
+
+{# show_actor=False hides staff/citizen names on the public tracking page (privacy). #}
+{% macro timeline(history, show_actor=True) -%}
+  <ol class="timeline">
+    {% for h in history %}
+      <li>
+        <strong>{{ h.new_status }}</strong>
+        <span class="muted small"> · {{ h.created_at|datetime }}</span>
+        {% if h.note %}<div>{{ h.note }}</div>{% endif %}
+        {% if show_actor %}<div class="muted small">by {{ h.changed_by }}</div>{% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+{%- endmacro %}
+
+{% macro bars(rows) -%}
+  {% for r in rows %}
+    <div class="bar-row"><span>{{ r.label }}</span><div class="bar"><i style="width: {{ r.pct }}%"></i></div><b>{{ r.count }}</b></div>
+  {% endfor %}
+{%- endmacro %}

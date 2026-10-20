@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import bars %}
+{% block title %}Analytics · HudumaLink{% endblock %}
+{% block content %}
+{# The donut is drawn with SVG circles: each slice is a circle whose dash length equals its share. #}
+{% set total = stats.total or 1 %}
+{% set slices = [('Pending', stats.pending, '#c9a227'), ('In Progress', stats.progress, '#1d5fa8'), ('Resolved', stats.resolved, '#0f7a49'), ('Rejected', stats.rejected, '#b81f2d')] %}
+<div class="page-head"><div class="wrap row between">
+  <div><h1>Service analytics</h1><p class="muted" style="margin:.2rem 0 0">Open versus resolved cases, workload and citizen satisfaction.</p></div>
+  <a class="btn btn-ghost" href="{{ url_for('admin.dashboard') }}">← Case queue</a>
+</div></div>
+
+<div class="wrap section" style="padding-top:2rem">
+  <div class="grid cols-4 keep2">
+    <div class="card stat"><b style="color:var(--red-600)">{{ stats.open }}</b><span>Open cases</span></div>
+    <div class="card stat"><b>{{ stats.resolved }}</b><span>Resolved cases</span></div>
+    <div class="card stat"><b>{{ stats.resolution_rate }}%</b><span>Resolution rate</span></div>
+    <div class="card stat"><b>{{ avg_days if avg_days is not none else '—' }}</b><span>Avg days to resolve</span></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:1.5rem">
+    <div class="card"><h3>Open vs resolved</h3>
+      <div class="donut-wrap">
+        <svg width="170" height="170" viewBox="0 0 42 42" role="img" aria-label="Status breakdown donut chart">
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--line)" stroke-width="6"/>
+          {% set ns = namespace(offset=25) %}
+          {% for label, n, colour in slices %}{% if n %}
+            {% set pct = n * 100 / total %}
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="{{ colour }}" stroke-width="6" stroke-dasharray="{{ pct }} {{ 100 - pct }}" stroke-dashoffset="{{ ns.offset }}"/>
+            {% set ns.offset = ns.offset - pct %}
+          {% endif %}{% endfor %}
+          <text x="21" y="22.5" text-anchor="middle" font-size="7" font-weight="700" fill="var(--ink)">{{ stats.total }}</text>
+          <text x="21" y="27" text-anchor="middle" font-size="2.6" fill="var(--ink-soft)">cases</text>
+        </svg>
+        <div class="legend" style="flex-direction:column;gap:.4rem">
+          {% for label, n, colour in slices %}<span><i style="background:{{ colour }}"></i>{{ label }} — <strong>{{ n }}</strong></span>{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card"><h3>Last 14 days</h3>
+      <svg viewBox="0 0 {{ trend.w }} {{ trend.h }}" width="100%" role="img" aria-label="Submitted versus resolved requests per day">
+        <polyline points="{{ trend.submitted }}" fill="none" stroke="#c9a227" stroke-width="3" stroke-linejoin="round"/>
+        <polyline points="{{ trend.resolved }}" fill="none" stroke="#0f7a49" stroke-width="3" stroke-linejoin="round"/>
+      </svg>
+      <div class="row between small muted"><span>{{ trend.start }}</span><span>peak {{ trend.peak }}/day</span><span>{{ trend.end }}</span></div>
+      <div class="legend"><span><i style="background:#c9a227"></i>Submitted</span><span><i style="background:#0f7a49"></i>Resolved</span></div>
+    </div>
+
+    <div class="card"><h3>Cases by service</h3>{{ bars(by_category) }}</div>
+    <div class="card"><h3>Cases by sub-county</h3>{{ bars(by_county) }}</div>
+    <div class="card"><h3>Cases by priority</h3>{{ bars(by_priority) }}</div>
+    <div class="card"><h3>Service quality</h3>
+      <p><b style="font:700 2.4rem var(--font-head);color:var(--green-700)">{{ satisfaction.average or '—' }}</b> / 5
+         <span class="muted">from {{ satisfaction.count }} rating{{ '' if satisfaction.count == 1 else 's' }}</span></p>
+      <p class="muted small">Overdue open cases (past their service target): <strong style="color:var(--red-600)">{{ overdue }}</strong></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

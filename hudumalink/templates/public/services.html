@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}County services · HudumaLink{% endblock %}
+{% block content %}
+<div class="page-head"><div class="wrap"><h1>County services</h1><p class="muted" style="margin:.3rem 0 0">Which department handles what, and how quickly we aim to respond.</p></div></div>
+<div class="wrap section">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Service</th><th>Responsible department</th><th>Service target</th><th></th></tr></thead>
+    <tbody>{% for name, info in CATEGORIES.items() %}
+      <tr><td><strong>{{ info.icon }} {{ name }}</strong></td><td>{{ info.department }}</td><td>{{ info.sla_days }} working days</td>
+          <td><a class="btn btn-ghost btn-sm" href="{{ url_for('citizen.new_request', category=name) }}">Report</a></td></tr>
+    {% endfor %}</tbody></table></div>
+
+  <h2 style="margin-top:3rem">Sub-counties we serve</h2>
+  <div class="row">{% for s in SUB_COUNTIES %}<span class="badge resolved">{{ s }}</span>{% endfor %}</div>
+
+  <div class="notice" style="margin-top:2rem"><strong>Emergency?</strong> HudumaLink is for non-emergency service issues. For fires, medical emergencies or crime, call <strong>999</strong> or <strong>112</strong>.</div>
+</div>
+{% endblock %}
