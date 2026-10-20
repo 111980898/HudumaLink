@@ -18,7 +18,7 @@ from .constants import CATEGORIES, PRIORITIES, STATUSES, SUB_COUNTIES
 
 
 def create_app(test_config: dict | None = None) -> Flask:
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), "templates"))
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
