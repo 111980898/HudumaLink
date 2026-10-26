@@ -92,6 +92,11 @@ def close_db(_exc=None) -> None:
         db.close()
 
 
+def init_app(app) -> None:
+    """Register database cleanup with the Flask application."""
+    app.teardown_appcontext(close_db)
+
+
 def init_db() -> None:
     """Create tables, then make sure there is at least one administrator."""
     db = get_db()
@@ -121,6 +126,9 @@ def _seed_demo_data(db: sqlite3.Connection) -> None:
     Populate a believable demo so markers can explore every screen at once.
     Runs only when the database has no users yet, so it never overwrites data.
     """
+    # Gunicorn can boot more than one worker at the same time. Serialize the
+    # empty-database check and first insert so both workers cannot seed twice.
+    db.execute("BEGIN IMMEDIATE")
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0]:
         return
 

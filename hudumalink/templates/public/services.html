@@ -1,18 +1,9 @@
 {% extends "base.html" %}
-{% block title %}County services · HudumaLink{% endblock %}
+{% block title %}Services · Huduma Link{% endblock %}
 {% block content %}
-<div class="page-head"><div class="wrap"><h1>County services</h1><p class="muted" style="margin:.3rem 0 0">Which department handles what, and how quickly we aim to respond.</p></div></div>
-<div class="wrap section">
-  <div class="table-wrap"><table>
-    <thead><tr><th>Service</th><th>Responsible department</th><th>Service target</th><th></th></tr></thead>
-    <tbody>{% for name, info in CATEGORIES.items() %}
-      <tr><td><strong>{{ info.icon }} {{ name }}</strong></td><td>{{ info.department }}</td><td>{{ info.sla_days }} working days</td>
-          <td><a class="btn btn-ghost btn-sm" href="{{ url_for('citizen.new_request', category=name) }}">Report</a></td></tr>
-    {% endfor %}</tbody></table></div>
-
-  <h2 style="margin-top:3rem">Sub-counties we serve</h2>
-  <div class="row">{% for s in SUB_COUNTIES %}<span class="badge resolved">{{ s }}</span>{% endfor %}</div>
-
-  <div class="notice" style="margin-top:2rem"><strong>Emergency?</strong> HudumaLink is for non-emergency service issues. For fires, medical emergencies or crime, call <strong>999</strong> or <strong>112</strong>.</div>
+<div class="page-head"><div class="wrap page-head-inner"><div><span class="eyebrow">Service directory</span><h1>Find the right county service.</h1><p class="muted">Search by service or department, then start a request when you are ready.</p></div><a class="btn btn-primary" href="{{ url_for('citizen.new_request') }}">Report a problem <span>↗</span></a></div></div>
+<div class="wrap section"><form class="directory-search" method="get" role="search"><span class="search-icon">⌕</span><input name="q" value="{{ query }}" placeholder="Search water, roads, waste, lighting…" aria-label="Search services"><button class="btn btn-dark" type="submit">Search directory</button></form>{% if query %}<p class="search-summary">Showing results for <strong>“{{ query }}”</strong> · <a href="{{ url_for('public.services_page') }}">Clear search</a></p>{% endif %}
+  {% if service_items %}<div class="directory-grid">{% for name, info in service_items %}<a class="service-card directory-card" href="{{ url_for('citizen.new_request', category=name) }}"><div class="service-icon">{{ info.icon }}</div><div class="service-kicker">{{ info.department }}</div><h2>{{ name }}</h2><p>We aim to respond within <strong>{{ info.sla_days }} working days</strong>.</p><div class="service-footer"><span>Start a request</span><span>↗</span></div></a>{% endfor %}</div>{% else %}<div class="empty-state"><div class="empty-icon">⌕</div><h2>No service matched that search.</h2><p>Try a broader phrase, or browse all service categories.</p><a class="btn btn-ghost" href="{{ url_for('public.services_page') }}">Show all services</a></div>{% endif %}
+  <div class="notice notice-dark"><strong>Emergency?</strong><span>Huduma Link is for non-emergency service issues. For fire, medical, or safety emergencies, call <strong>112</strong> or <strong>999</strong>.</span></div>
 </div>
 {% endblock %}

@@ -7,3 +7,4 @@ instance/
 *.db
 .vercel/
 .pytest_cache/
+node_modules/

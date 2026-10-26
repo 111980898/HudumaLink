@@ -1,7 +1,8 @@
 """Pages anyone can open without signing in."""
-from flask import Blueprint, abort, current_app, render_template, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
 
 from .. import services
+from ..constants import CATEGORIES
 from ..db import get_db
 
 bp = Blueprint("public", __name__)
@@ -33,7 +34,13 @@ def track():
 
 @bp.route("/services")
 def services_page():
-    return render_template("public/services.html")
+    query = request.args.get("q", "").strip()[:80]
+    items = list(CATEGORIES.items())
+    if query:
+        needle = query.lower()
+        items = [(name, info) for name, info in items
+                 if needle in name.lower() or needle in info["department"].lower()]
+    return render_template("public/services.html", query=query, service_items=items)
 
 
 @bp.route("/faq")
@@ -45,3 +52,15 @@ def faq():
 def media(filename):
     """Serve uploaded photos from the (possibly non-static) upload folder."""
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+
+
+@bp.route("/manus-routes.json")
+def route_manifest():
+    """Serve the managed Preview route declaration from the application root."""
+    return send_from_directory(current_app.static_folder or "", "manus-routes.json")
+
+
+@bp.route("/_app/health")
+def health():
+    """Unauthenticated readiness response used by the published container."""
+    return jsonify(status="ok", service="huduma-link"), 200

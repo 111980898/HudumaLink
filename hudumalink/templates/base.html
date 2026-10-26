@@ -3,86 +3,62 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="HudumaLink — report county service problems in Murang'a and follow them to resolution.">
-  <title>{% block title %}HudumaLink · Murang'a County Service Requests{% endblock %}</title>
+  <meta name="description" content="Huduma Link helps Murang'a residents find services, report issues, and follow every request to resolution.">
+  <title>{% block title %}Huduma Link · Public service made simple{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-  <script>/* apply saved theme before first paint to avoid a white flash */
-    try { var t = localStorage.getItem("hl-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
+  <script>try { var t = localStorage.getItem("hl-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
 </head>
 <body>
 <a class="skip-link" href="#content">Skip to main content</a>
-<div class="tricolour"></div>
-<div class="utility"><div class="wrap">
-  <span>🇰🇪 Murang'a County · Digital Service Delivery (student prototype)</span>
-  <span>Customer care: <a href="tel:0700000000">0700 000 000</a> · <a href="mailto:help@hudumalink.demo">help@hudumalink.demo</a></span>
+<div class="signal-line" aria-hidden="true"></div>
+<div class="utility"><div class="wrap utility-inner">
+  <span><span class="status-mark"></span> Murang'a County · Service signal online</span>
+  <span>Need urgent help? <a href="tel:112">Call 112</a> · Support <a href="mailto:support@hudumalink.org">support@hudumalink.org</a></span>
 </div></div>
-
-<header class="site-header"><div class="wrap">
-  <a class="brand" href="{{ url_for('public.home') }}">
-    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
-    <span><strong>HudumaLink</strong><small>Murang'a County Service Portal</small></span>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="{{ url_for('public.home') }}" aria-label="Huduma Link home">
+    <span class="brand-mark" aria-hidden="true"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt=""></span>
+    <span><strong>Huduma Link</strong><small>Murang'a civic services</small></span>
   </a>
-  <button class="icon-btn nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">☰</button>
-  <nav class="nav" id="main-nav" aria-label="Main">
+  <div class="header-tools">
+    <form class="global-search" action="{{ url_for('public.services_page') }}" method="get" role="search">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input id="global-search" name="q" type="search" autocomplete="off" placeholder="Search services, help or a reference" aria-label="Search services, help or a request reference" aria-expanded="false" aria-controls="global-search-results">
+      <kbd>/</kbd>
+      <div class="search-results" id="global-search-results" role="listbox" hidden></div>
+    </form>
+    <button class="icon-btn nav-toggle" id="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-nav" type="button">☰</button>
+  </div>
+  <nav class="nav" id="main-nav" aria-label="Main navigation">
     <a href="{{ url_for('public.home') }}" {% if request.endpoint == 'public.home' %}aria-current="page"{% endif %}>Home</a>
     <a href="{{ url_for('public.services_page') }}" {% if request.endpoint == 'public.services_page' %}aria-current="page"{% endif %}>Services</a>
     <a href="{{ url_for('public.track') }}" {% if request.endpoint == 'public.track' %}aria-current="page"{% endif %}>Track</a>
     <a href="{{ url_for('public.faq') }}" {% if request.endpoint == 'public.faq' %}aria-current="page"{% endif %}>Help</a>
     {% if session.user_id %}
       {% if session.role == 'admin' %}
-        <a href="{{ url_for('admin.dashboard') }}">Case queue</a>
-        <a href="{{ url_for('admin.analytics') }}">Analytics</a>
+        <a href="{{ url_for('admin.dashboard') }}">Queue</a><a href="{{ url_for('admin.analytics') }}">Insights</a>
       {% else %}
-        <a href="{{ url_for('citizen.dashboard') }}" class="bell">My requests{% if unread_count %}<span class="count" aria-label="{{ unread_count }} unread">{{ unread_count }}</span>{% endif %}</a>
-        <a href="{{ url_for('citizen.profile') }}">Profile</a>
+        <a href="{{ url_for('citizen.dashboard') }}" class="bell">My requests{% if unread_count %}<span class="count" aria-label="{{ unread_count }} unread">{{ unread_count }}</span>{% endif %}</a><a href="{{ url_for('citizen.profile') }}">Profile</a>
       {% endif %}
-      <form method="post" action="{{ url_for('auth.logout') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="link" type="submit">Sign out</button>
-      </form>
+      <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link" type="submit">Sign out</button></form>
     {% else %}
-      <a href="{{ url_for('auth.login') }}">Sign in</a>
-      <a class="btn btn-primary btn-sm" href="{{ url_for('auth.register') }}">Create account</a>
+      <a href="{{ url_for('auth.login') }}">Sign in</a><a class="btn btn-primary btn-sm" href="{{ url_for('auth.register') }}">Create account</a>
     {% endif %}
-    <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode" type="button">🌙</button>
+    <button class="icon-btn theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" type="button">◐</button>
   </nav>
 </div></header>
-
 <main id="content">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}<div class="wrap">{% for cat, msg in messages %}
-      <div class="flash {{ cat }}" role="status">{{ msg }}</div>{% endfor %}</div>{% endif %}
-  {% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="wrap flash-stack">{% for cat, msg in messages %}<div class="flash {{ cat }}" role="status">{{ msg }}</div>{% endfor %}</div>{% endif %}{% endwith %}
   {% block content %}{% endblock %}
 </main>
-
-<footer class="site-footer"><div class="wrap">
-  <div class="grid cols-3">
-    <div>
-      <h4>HudumaLink</h4>
-      <p class="small">A citizen-first portal for reporting and tracking public service issues across the seven sub-counties of Murang'a.</p>
-    </div>
-    <div>
-      <h4>Quick links</h4>
-      <ul class="small">
-        <li><a href="{{ url_for('public.track') }}">Track a request</a></li>
-        <li><a href="{{ url_for('public.services_page') }}">County services</a></li>
-        <li><a href="{{ url_for('public.faq') }}">Help &amp; FAQ</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Notice</h4>
-      <p class="small">Educational prototype — not an official county government website. Please do not submit real personal information.</p>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2026 HudumaLink · Developed by <strong>Dennis Kamau</strong></span>
-    <span>Dev</span>
-  </div>
-</div></footer>
-<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+<footer class="site-footer"><div class="wrap footer-grid">
+  <div class="footer-brand"><div class="footer-wordmark"><span class="brand-mark small-mark"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt=""></span><strong>Huduma Link</strong></div><p>One clear signal between residents and the public services around them.</p></div>
+  <div><h4>Find your way</h4><a href="{{ url_for('public.services_page') }}">Browse services</a><a href="{{ url_for('public.track') }}">Track a request</a><a href="{{ url_for('public.faq') }}">Help centre</a></div>
+  <div><h4>Good to know</h4><p>Huduma Link is for non-emergency service requests. For fire, medical, or safety emergencies, call <strong>112</strong> or <strong>999</strong>.</p></div>
+</div><div class="wrap footer-bottom"><span>© 2026 Huduma Link</span><span>Built for clearer county service delivery</span></div></footer>
+<script src="{{ url_for('static', filename='js/spectral-drape.js') }}" defer></script><script src="{{ url_for('static', filename='js/vortex.js') }}" defer></script><script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>

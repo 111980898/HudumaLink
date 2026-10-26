@@ -70,13 +70,16 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        account_type = request.form.get("account_type", "citizen").strip().lower()
+        if account_type not in {"citizen", "admin"}:
+            account_type = "citizen"
 
         if security.too_many_attempts(email):
             flash("Too many failed attempts. Please wait a few minutes and try again.", "error")
-            return render_template("auth/login.html"), 429
+            return render_template("auth/login.html", selected_role=account_type), 429
 
         user = get_db().execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        if user and check_password_hash(user["password_hash"], password):
+        if user and user["role"] == account_type and check_password_hash(user["password_hash"], password):
             security.clear_failures(email)
             session.clear()                       # new session = no fixation
             session.update(user_id=user["id"], name=user["full_name"], role=user["role"])
@@ -85,9 +88,12 @@ def login():
             return redirect(security.safe_next_url(request.args.get("next", ""), home))
 
         security.record_failure(email)
-        flash("That email and password do not match.", "error")
-        return render_template("auth/login.html"), 401
-    return render_template("auth/login.html")
+        if user and user["role"] != account_type:
+            flash("Choose the account type assigned to this email address.", "error")
+        else:
+            flash("That email and password do not match.", "error")
+        return render_template("auth/login.html", selected_role=account_type), 401
+    return render_template("auth/login.html", selected_role="citizen")
 
 
 @bp.route("/logout", methods=["POST"])

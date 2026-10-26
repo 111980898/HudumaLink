@@ -33,8 +33,9 @@ def register(client, email="a@test.dev", pw="Passw0rdX"):
         "phone": "0712345678", "sub_county": "Kiharu", "password": pw}, follow_redirects=True)
 
 
-def login(client, email="a@test.dev", pw="Passw0rdX"):
-    return client.post("/login", data={"csrf_token": token(client), "email": email, "password": pw},
+def login(client, email="a@test.dev", pw="Passw0rdX", role="citizen"):
+    return client.post("/login", data={"csrf_token": token(client), "email": email, "password": pw,
+                                        "account_type": role},
                        follow_redirects=True)
 
 
@@ -62,6 +63,13 @@ def test_post_without_csrf_is_rejected(client):
 def test_register_and_login(client):
     assert b"account is ready" in register(client).data
     assert b"Welcome back" in login(client).data
+
+
+def test_login_role_selector_blocks_wrong_workspace(client):
+    register(client)
+    response = client.post("/login", data={"csrf_token": token(client), "email": "a@test.dev",
+                                            "password": "Passw0rdX", "account_type": "admin"})
+    assert response.status_code == 401
 
 
 def test_weak_password_rejected(client):
@@ -111,7 +119,7 @@ def test_admin_workflow_and_notification(client):
     register(client); login(client); submit(client)
     client.post("/logout", data={"csrf_token": token(client, "/")})
 
-    login(client, "boss@test.dev", "Strong123")
+    login(client, "boss@test.dev", "Strong123", role="admin")
     assert client.get("/admin/").status_code == 200
     assert client.get("/admin/analytics").status_code == 200
     page = client.get("/requests/1").get_data(as_text=True)
@@ -134,7 +142,7 @@ def test_admin_workflow_and_notification(client):
 def test_resolved_request_can_be_rated(client):
     register(client); login(client); submit(client)
     client.post("/logout", data={"csrf_token": token(client, "/")})
-    login(client, "boss@test.dev", "Strong123")
+    login(client, "boss@test.dev", "Strong123", role="admin")
     csrf = re.search(r'name="csrf_token" value="([^"]+)"', client.get("/requests/1").get_data(as_text=True)).group(1)
     for status in ("In Progress", "Resolved"):
         client.post("/admin/requests/1/update", data={"csrf_token": csrf, "status": status, "priority": "Normal",

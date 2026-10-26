@@ -1,44 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/macros.html" import badge, priority %}
-{% block title %}Case queue · HudumaLink{% endblock %}
+{% block title %}Case queue · Huduma Link{% endblock %}
 {% block content %}
-<div class="page-head"><div class="wrap row between">
-  <div><h1>Case queue</h1><p class="muted" style="margin:.2rem 0 0">Urgent and high-priority cases appear first.</p></div>
-  <div class="row"><a class="btn btn-ghost" href="{{ url_for('admin.analytics') }}">📊 Analytics</a>
-    <a class="btn btn-ghost" href="{{ url_for('admin.export_csv', **qs) }}">⬇ Export CSV</a></div>
-</div></div>
-
-<div class="wrap section" style="padding-top:2rem">
-  <div class="grid cols-4 keep2">
-    <div class="card stat"><b>{{ stats.total }}</b><span>All cases</span></div>
-    <div class="card stat"><b style="color:var(--red-600)">{{ stats.open }}</b><span>Open ({{ stats.pending }} pending · {{ stats.progress }} in progress)</span></div>
-    <div class="card stat"><b>{{ stats.resolved }}</b><span>Resolved</span></div>
-    <div class="card stat"><b>{{ overdue|length }}</b><span>Overdue</span></div>
-  </div>
-
-  <form class="filters" method="get" style="margin-top:1.5rem">
-    <input type="search" name="q" value="{{ f.q }}" placeholder="Search reference, title, location, citizen…" aria-label="Search" style="flex:1;min-width:220px">
-    <select name="status" aria-label="Status"><option value="">All statuses</option>{% for s in STATUSES %}<option {{ 'selected' if f.status == s }}>{{ s }}</option>{% endfor %}</select>
-    <select name="category" aria-label="Category"><option value="">All services</option>{% for c in CATEGORIES %}<option {{ 'selected' if f.category == c }}>{{ c }}</option>{% endfor %}</select>
-    <select name="sub_county" aria-label="Sub-county"><option value="">All sub-counties</option>{% for s in SUB_COUNTIES %}<option {{ 'selected' if f.sub_county == s }}>{{ s }}</option>{% endfor %}</select>
-    <button class="btn btn-primary btn-sm" type="submit">Filter</button>
-    <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">Reset</a>
-  </form>
-
-  <div class="table-wrap"><table>
-    <thead><tr><th>Reference</th><th>Case</th><th>Citizen</th><th>Priority</th><th>Status</th><th>Age</th></tr></thead>
-    <tbody>{% for r in requests %}
-      <tr><td><a class="ref" href="{{ url_for('citizen.detail', request_id=r.id) }}">{{ r.reference }}</a></td>
-          <td>{{ r.subject }}<div class="muted small">{{ r.category }} · {{ r.sub_county }}</div></td>
-          <td>{{ r.full_name }}</td><td>{{ priority(r.priority) }}</td>
-          <td>{{ badge(r.status) }}{% if r.id in overdue %}<span class="overdue-tag">OVERDUE</span>{% endif %}</td>
-          <td class="muted">{{ r.created_at|ago }}</td></tr>
-    {% else %}<tr><td colspan="6" class="muted" style="text-align:center;padding:2rem">No cases match these filters.</td></tr>{% endfor %}
-    </tbody></table></div>
-
-  {% if pages > 1 %}<div class="pager">
-    {% for p in range(1, pages + 1) %}{% if p == page %}<span class="on">{{ p }}</span>{% else %}<a href="{{ url_for('admin.dashboard', page=p, **qs) }}">{{ p }}</a>{% endif %}{% endfor %}
-  </div>{% endif %}
-  <p class="muted small" style="text-align:center">{{ total }} case{{ '' if total == 1 else 's' }} found</p>
-</div>
+<div class="page-head"><div class="wrap page-head-inner"><div><span class="eyebrow">Operations desk</span><h1>Case queue.</h1><p class="muted">Prioritise the next handoff and keep residents in the loop.</p></div><div class="row"><a class="btn btn-ghost" href="{{ url_for('admin.analytics') }}">View insights <span>↗</span></a><a class="btn btn-primary" href="{{ url_for('admin.export_csv', **qs) }}">Export CSV <span>↓</span></a></div></div></div>
+<div class="wrap section dashboard-section"><div class="signal-cards"><div class="card signal-card"><span class="panel-kicker">All cases</span><strong>{{ stats.total }}</strong><span class="muted">Across every service</span></div><div class="card signal-card"><span class="panel-kicker">Open</span><strong class="danger-number">{{ stats.open }}</strong><span class="muted">{{ stats.pending }} pending · {{ stats.progress }} in progress</span></div><div class="card signal-card"><span class="panel-kicker">Resolved</span><strong>{{ stats.resolved }}</strong><span class="muted">{{ stats.resolution_rate }}% resolution rate</span></div><div class="card signal-card signal-card-accent"><span class="panel-kicker">Needs attention</span><strong>{{ overdue|length }}</strong><span class="muted">past service target</span></div></div><form class="filters admin-filters" method="get"><input type="search" name="q" value="{{ f.q }}" placeholder="Search reference, title, location, citizen…" aria-label="Search cases"><select name="status" aria-label="Status"><option value="">All statuses</option>{% for s in STATUSES %}<option {{ 'selected' if f.status == s }}>{{ s }}</option>{% endfor %}</select><select name="category" aria-label="Category"><option value="">All services</option>{% for c in CATEGORIES %}<option {{ 'selected' if f.category == c }}>{{ c }}</option>{% endfor %}</select><select name="sub_county" aria-label="Sub-county"><option value="">All sub-counties</option>{% for s in SUB_COUNTIES %}<option {{ 'selected' if f.sub_county == s }}>{{ s }}</option>{% endfor %}</select><button class="btn btn-primary btn-sm" type="submit">Apply filters</button><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">Reset</a></form><div class="table-wrap"><table><thead><tr><th>Reference</th><th>Case</th><th>Citizen</th><th>Priority</th><th>Status</th><th>Age</th></tr></thead><tbody>{% for r in requests %}<tr><td><a class="ref" href="{{ url_for('citizen.detail', request_id=r.id) }}">{{ r.reference }}</a></td><td><strong>{{ r.subject }}</strong><div class="muted small">{{ r.category }} · {{ r.sub_county }}</div></td><td>{{ r.full_name }}</td><td>{{ priority(r.priority) }}</td><td>{{ badge(r.status) }}{% if r.id in overdue %}<span class="overdue-tag">OVERDUE</span>{% endif %}</td><td class="muted">{{ r.created_at|ago }}</td></tr>{% else %}<tr><td colspan="6"><div class="empty-state compact"><h3>No cases match these filters.</h3><p class="muted">Try clearing a filter or searching a broader term.</p></div></td></tr>{% endfor %}</tbody></table></div>{% if pages > 1 %}<div class="pager">{% for p in range(1, pages + 1) %}{% if p == page %}<span class="on">{{ p }}</span>{% else %}<a href="{{ url_for('admin.dashboard', page=p, **qs) }}">{{ p }}</a>{% endif %}{% endfor %}</div>{% endif %}<p class="muted small table-count">{{ total }} case{{ '' if total == 1 else 's' }} found</p></div>
 {% endblock %}

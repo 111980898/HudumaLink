@@ -1,47 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/macros.html" import badge %}
-{% block title %}My requests · HudumaLink{% endblock %}
+{% block title %}My requests · Huduma Link{% endblock %}
 {% block content %}
-<div class="page-head"><div class="wrap row between">
-  <div><h1>Hello, {{ session.name.split()[0] }}</h1><p class="muted" style="margin:.2rem 0 0">Here is everything you have reported to the county.</p></div>
-  <a class="btn btn-primary" href="{{ url_for('citizen.new_request') }}">+ New request</a>
-</div></div>
-
-<div class="wrap section" style="padding-top:2rem">
-  <div class="grid cols-4 keep2">
-    <div class="card stat"><b>{{ stats.total }}</b><span>Total</span></div>
-    <div class="card stat"><b>{{ stats.pending }}</b><span>Pending</span></div>
-    <div class="card stat"><b>{{ stats.progress }}</b><span>In progress</span></div>
-    <div class="card stat"><b>{{ stats.resolved }}</b><span>Resolved</span></div>
-  </div>
-
-  <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:1.5rem; align-items:start">
-    <div>
-      <div class="filters">
-        <a class="btn btn-sm {{ 'btn-primary' if not active else 'btn-ghost' }}" href="{{ url_for('citizen.dashboard') }}">All</a>
-        {% for s in STATUSES %}<a class="btn btn-sm {{ 'btn-primary' if active == s else 'btn-ghost' }}" href="{{ url_for('citizen.dashboard', status=s) }}">{{ s }}</a>{% endfor %}
-      </div>
-      {% if requests %}
-      <div class="table-wrap"><table>
-        <thead><tr><th>Reference</th><th>Request</th><th>Status</th><th>Updated</th></tr></thead>
-        <tbody>{% for r in requests %}
-          <tr><td><a class="ref" href="{{ url_for('citizen.detail', request_id=r.id) }}">{{ r.reference }}</a></td>
-              <td>{{ r.subject }}<div class="muted small">{{ r.category }} · {{ r.sub_county }}</div></td>
-              <td>{{ badge(r.status) }}</td><td class="muted">{{ r.updated_at|ago }}</td></tr>
-        {% endfor %}</tbody></table></div>
-      {% else %}
-        <div class="card" style="text-align:center"><h3>No requests here yet</h3><p class="muted">When you report a problem it will appear in this list.</p><a class="btn btn-primary" href="{{ url_for('citizen.new_request') }}">Report a problem</a></div>
-      {% endif %}
-    </div>
-
-    <aside class="card">
-      <div class="row between"><h3 style="margin:0">Notifications</h3>
-        {% if notifications %}<form method="post" action="{{ url_for('citizen.read_notifications') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm" type="submit">Mark all read</button></form>{% endif %}</div>
-      {% for n in notifications %}
-        <div style="padding:.7rem 0;border-top:1px solid var(--line);{{ 'font-weight:600' if not n.is_read }}">
-          {{ n.message }}<div class="muted small">{{ n.created_at|ago }}</div></div>
-      {% else %}<p class="muted small">No notifications yet.</p>{% endfor %}
-    </aside>
-  </div>
-</div>
+<div class="page-head"><div class="wrap page-head-inner"><div><span class="eyebrow">Citizen workspace</span><h1>Hello, {{ session.name.split()[0] }}.</h1><p class="muted">Your open signals, recent activity, and next actions in one place.</p></div><a class="btn btn-primary" href="{{ url_for('citizen.new_request') }}">New request <span>↗</span></a></div></div>
+<div class="wrap section dashboard-section"><div class="signal-cards"><div class="card signal-card"><span class="panel-kicker">All requests</span><strong>{{ stats.total }}</strong><span class="muted">Everything you have reported</span></div><div class="card signal-card"><span class="panel-kicker">Open now</span><strong>{{ stats.open }}</strong><span class="muted">Waiting or in progress</span></div><div class="card signal-card"><span class="panel-kicker">Resolved</span><strong>{{ stats.resolved }}</strong><span class="muted">Closed successfully</span></div><div class="card signal-card signal-card-accent"><span class="panel-kicker">Next action</span><strong>{{ 'Follow up' if stats.open else 'Start a request' }}</strong><a href="{{ url_for('citizen.new_request') if not stats.open else url_for('public.track') }}">{{ 'Report an issue' if not stats.open else 'Track a case' }} <span>↗</span></a></div></div><div class="dashboard-grid"><section><div class="section-row"><div><span class="eyebrow">Your activity</span><h2>Requests in motion.</h2></div><div class="filters"><a class="filter-pill {{ 'active' if not active else '' }}" href="{{ url_for('citizen.dashboard') }}">All</a>{% for s in STATUSES %}<a class="filter-pill {{ 'active' if active == s else '' }}" href="{{ url_for('citizen.dashboard', status=s) }}">{{ s }}</a>{% endfor %}</div></div>{% if requests %}<div class="request-list">{% for r in requests %}<a class="request-row" href="{{ url_for('citizen.detail', request_id=r.id) }}"><div><span class="ref">{{ r.reference }}</span><h3>{{ r.subject }}</h3><p class="muted small">{{ r.category }} · {{ r.sub_county }}</p></div><div class="request-row-meta">{{ badge(r.status) }}<span class="muted small">{{ r.updated_at|ago }}</span><span class="row-arrow">↗</span></div></a>{% endfor %}</div>{% else %}<div class="card empty-state"><div class="empty-icon">＋</div><h3>No requests in this view.</h3><p class="muted">When you report a problem, the full signal will appear here.</p><a class="btn btn-primary" href="{{ url_for('citizen.new_request') }}">Report a problem</a></div>{% endif %}</section><aside class="card activity-card"><div class="section-row"><div><span class="eyebrow">Updates</span><h2>Recent activity</h2></div>{% if notifications %}<form method="post" action="{{ url_for('citizen.read_notifications') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-button" type="submit">Mark read</button></form>{% endif %}</div>{% for n in notifications %}<div class="activity-item {{ 'unread' if not n.is_read }}"><span class="activity-dot"></span><div><p>{{ n.message }}</p><span class="muted small">{{ n.created_at|ago }}</span></div></div>{% else %}<p class="muted small">No updates yet. A status change will appear here.</p>{% endfor %}</aside></div></div>
 {% endblock %}

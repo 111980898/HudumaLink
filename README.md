@@ -1,113 +1,132 @@
-# HudumaLink
+# Huduma Link
 
-**A county-style service desk where residents report public problems and watch them get fixed.**
+**Public Service Request System — mini eCitizen-style portal**
 
-*Swahili: "huduma" = service. HudumaLink links citizens to the departments that serve them.*
+Huduma Link gives citizens one clear place to register, report local service problems, follow progress, and see the next action. Administrators get a protected service queue for reviewing, routing, updating, and analysing requests.
 
-> Educational prototype for Murang'a County's seven sub-counties. It is not an official government site; please do not enter real personal data.
+> Educational assessment project. It is not an official government website. Do not enter real personal or sensitive information.
 
-Built by **Dennis Kamau**, 
+## Assessment requirements covered
 
----
+- Citizen registration and secure login
+- Citizen/Admin workspace selector on the login screen
+- Public service request submission
+- Categories such as broken streetlights, water, garbage, roads, and public health
+- Location, description, priority, phone number, and optional image upload
+- Admin dashboard with queue, filters, search, status controls, and CSV export
+- Status workflow: **Pending → In Progress → Resolved** (plus Rejected when necessary)
+- Public tracking by reference number without signing in
+- Analytics for open versus resolved cases
+- Responsive mini eCitizen-style interface for desktop and mobile
 
-## What a resident can do
+## Extra features
 
-| Step | Feature |
-|---|---|
-| Join | Register and sign in (hashed passwords, brute-force lock-out) |
-| Report | File a request: category, sub-county, location (with GPS button), description, urgency, optional photo |
-| Follow | Get a tracking number such as `HL-261020-9F3A1C`, then see a progress bar, timeline and in-app notifications |
-| Check without an account | Public **Track** page: reference number in, status out, with no personal data shown |
-| Rate | Give 1-5 stars and a comment once a case is resolved |
+- SLA targets and overdue case flags
+- Department routing
+- Citizen notifications and request timeline
+- Citizen feedback and 1–5 star rating after resolution
+- Search across services, FAQs, and request references
+- GPS-assisted location capture
+- Photo validation and preview
+- Dark mode, reduced-motion support, keyboard-friendly navigation, skip links, and visible focus states
+- Print-friendly request details
+- Formula-safe CSV export
+- Spectral Drape-inspired animated dot background in the hero
+- Scroll-reactive Vortex particle tunnel between the service workflow and live request feed
+- Murang'a County coat of arms identity mark used as a restrained portal context cue
 
-## What county staff can do
+## Roles and access
 
-- **Case queue** sorted by urgency, with search and filters (status, service, sub-county) and pagination
-- **Controlled workflow**: Pending → In Progress → Resolved (or Rejected). Illegal jumps are refused, and Resolved cases can be re-opened
-- **Routing**: each service maps to a department, and staff can reassign it and change the priority
-- **Two kinds of note**: a message the citizen sees and an internal staff-only note
-- **Overdue flags** when an open case passes its service-level target (for example water problems: 3 days)
-- **Analytics**: open vs resolved donut chart, 14-day trend, cases by service, sub-county and priority, average days to resolve, satisfaction score
-- **CSV export** of the current filtered view (formula-injection safe)
+### Citizen
 
-## Beyond the brief (bonus features)
+Citizens can create accounts, submit service requests, upload an optional image, view their own dashboard, follow timelines, receive updates, and rate resolved cases.
 
-Public tracking page · SLA/overdue engine · priority levels · department routing · star ratings · analytics charts drawn in pure SVG · CSV export · dark mode · GPS location · photo preview · print-friendly request page · accessibility (skip link, focus rings, ARIA labels, reduced-motion support) · automated test suite.
+### Administrator
 
----
+Administrators can review every request, filter the queue, assign departments, change priority, move requests through the controlled workflow, write public/internal notes, export CSV data, and view analytics.
+
+The login form includes the required Citizen/Administrator dropdown. Selecting Administrator does not grant access by itself: the email must belong to an approved administrator account.
 
 ## Quick start
 
-Requires **Python 3.10+**.
+Requires Python 3.10+.
 
 ```bash
-git clone <your-repo-url> && cd HudumaLink
+git clone <your-repository-url>
+cd HudumaLink
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-python app.py                    # open http://127.0.0.1:5000
+
+# Development mode with sample accounts and sample requests (the default)
+export DEMO_MODE=1
+python app.py
 ```
 
-On first run the app creates its database and, because `DEMO_MODE` is on by default, loads sample data and two demo accounts:
+Open `http://127.0.0.1:3000`.
+
+Demo accounts when `DEMO_MODE=1`:
 
 | Role | Email | Password |
 |---|---|---|
 | Citizen | `citizen@hudumalink.demo` | `Citizen@2026` |
-| Admin | `admin@hudumalink.demo` | `Admin@2026` |
+| Administrator | `admin@hudumalink.demo` | `Admin@2026` |
 
-### Configuration (environment variables)
+For a clean empty database, use `DEMO_MODE=0` and configure an administrator:
 
-| Variable | Purpose | Default |
-|---|---|---|
-| `SECRET_KEY` | Signs session cookies. **Set it in production.** | dev value |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Creates your own administrator on start-up | none |
-| `DEMO_MODE` | `false` disables demo accounts and sample data | `true` |
-| `DATABASE_PATH` / `UPLOAD_FOLDER` | Where data is stored | `instance/` (or `/tmp` on Vercel) |
+```bash
+export DEMO_MODE=0
+export ADMIN_EMAIL=admin@example.com
+export ADMIN_PASSWORD='ChangeMe123'
+export SECRET_KEY='use-a-long-random-value'
+python app.py
+```
 
-### Run the tests
+## Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `SECRET_KEY` | Signs session cookies; set a strong value outside local development |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Creates an approved administrator on first startup |
+| `DEMO_MODE` | Loads assessment sample data and demo accounts; defaults to `1`, set to `0` for a clean database |
+| `DATABASE_PATH` | SQLite database file location |
+| `UPLOAD_FOLDER` | Uploaded request-image location |
+| `SESSION_COOKIE_SECURE` | Keep `true` for HTTPS Preview; use `false` for local HTTP |
+
+## Run the tests
 
 ```bash
 pip install pytest
 python -m pytest -q
 ```
 
----
+## Project structure
 
-## How the code is organised
-
-```
+```text
 HudumaLink/
-├── app.py                    entry point (local run + Vercel/Gunicorn)
+├── app.py                         Flask entry point for local run and Vercel
 ├── hudumalink/
-│   ├── __init__.py           application factory: builds and wires the app
-│   ├── config.py             settings read from environment variables
-│   ├── constants.py          categories, statuses, sub-counties, allowed transitions
-│   ├── db.py                 SQLite connection, schema, demo seed data
-│   ├── security.py           CSRF, access control, login throttling, upload checks
-│   ├── services.py           business rules and analytics queries
-│   ├── filters.py            template helpers (dates, "3 days ago", stars)
-│   ├── blueprints/
-│   │   ├── public.py         home, track, services, FAQ, photo serving
-│   │   ├── auth.py           register / login / logout
-│   │   ├── citizen.py        dashboard, new request, detail, feedback, profile
-│   │   └── admin.py          case queue, analytics, update, CSV export
-│   ├── templates/            Jinja pages grouped by area + reusable macros
-│   └── static/               css/main.css, js/app.js, img/logo.svg
-├── tests/test_app.py         12 end-to-end tests
-├── docs/DEPLOYMENT.md        GitHub + Vercel walkthrough
-└── vercel.json, requirements.txt, .env.example
+│   ├── __init__.py                application factory and shared context
+│   ├── config.py                  environment configuration
+│   ├── constants.py               categories, roles, statuses, and service rules
+│   ├── db.py                      SQLite schema and initialization
+│   ├── security.py                CSRF, login throttling, access control, upload checks
+│   ├── services.py                business rules and analytics queries
+│   ├── blueprints/                public, auth, citizen, and admin routes
+│   ├── templates/                 responsive Jinja pages and reusable macros
+│   └── static/                    CSS, JavaScript, logo, and route manifest
+├── Dockerfile                     production container and health-check entrypoint
+├── components/                    Spectral Drape and Vortex adapters for React surfaces
+├── components.json                React Bits Pro registry configuration
+├── tests/test_app.py               end-to-end assessment tests
+├── requirements.txt
+└── vercel.json                     existing Vercel routing configuration
 ```
 
-**Design principle:** routes stay thin (read input → call a service → render), SQL is always parameterised, and every rule (valid statuses, allowed transitions, SLA days) lives in exactly one file.
+## Vercel
 
-## Security notes
+The existing `vercel.json` routing configuration is preserved. Connect the repository to Vercel and add the production environment variables above. For a production database, replace temporary SQLite storage with a hosted database because serverless instances can be short-lived.
 
-CSRF tokens on every POST · hashed passwords · public sign-up can only ever create *citizens* · access checks so residents see only their own cases · uploads verified by file signature, not just file name · open-redirect protection · CSV formula protection · public pages never expose names or contact details.
+## Code quality and safety
 
-## Known limitations
-
-SQLite on Vercel lives in temporary storage, so data resets on cold starts. That is fine for a demo; use a hosted database (Postgres, Turso) for real use. There is no email/SMS or password recovery, and the login limiter is in-memory.
-
-## Licence & credits
-
-See [NOTICE.md](NOTICE.md). Original starter: Dennis Kamau. 
+Routes stay thin, SQL queries are parameterised, business rules live in one service layer, passwords are hashed, POST requests use CSRF protection, public signup creates citizens only, admin routes are protected, uploads are checked by file signature, and public tracking never exposes citizen contact details.

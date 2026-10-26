@@ -1,76 +1,29 @@
-/* HudumaLink front-end behaviour. Plain JavaScript, no frameworks, no build step. */
-(function () {
-  "use strict";
-
-  /* --- Dark / light theme: remembered in localStorage (wrapped: it can throw) --- */
-  var root = document.documentElement;
-  function savedTheme() { try { return localStorage.getItem("hl-theme"); } catch (e) { return null; } }
-  function setTheme(t) {
-    root.setAttribute("data-theme", t);
-    try { localStorage.setItem("hl-theme", t); } catch (e) {}
-    var btn = document.getElementById("theme-toggle");
-    if (btn) btn.textContent = t === "dark" ? "☀️" : "🌙";
-  }
-  setTheme(savedTheme() || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-  var toggle = document.getElementById("theme-toggle");
-  if (toggle) toggle.addEventListener("click", function () {
-    setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
-  });
-
-  /* --- Mobile navigation --- */
-  var navBtn = document.getElementById("nav-toggle"), nav = document.getElementById("main-nav");
-  if (navBtn && nav) navBtn.addEventListener("click", function () {
-    var open = nav.classList.toggle("open");
-    navBtn.setAttribute("aria-expanded", open);
-  });
-
-  /* --- Live character counter on any textarea[data-max] --- */
-  document.querySelectorAll("textarea[data-max]").forEach(function (area) {
-    var out = document.getElementById(area.id + "-count");
-    function update() { if (out) out.textContent = area.value.length + " / " + area.dataset.max; }
-    area.addEventListener("input", update); update();
-  });
-
-  /* --- Image preview + client-side size check on the upload field --- */
-  var file = document.getElementById("image");
-  var preview = document.getElementById("image-preview");
-  if (file && preview) file.addEventListener("change", function () {
-    var f = file.files[0];
-    preview.innerHTML = "";
-    if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { alert("That photo is larger than 5 MB. Please pick a smaller one."); file.value = ""; return; }
-    var img = document.createElement("img");
-    img.alt = "Preview of the selected photo";
-    img.src = URL.createObjectURL(f);
-    preview.appendChild(img);
-  });
-
-  /* --- Use the phone's GPS to fill the location box (needs the user's permission) --- */
-  var gps = document.getElementById("use-gps");
-  if (gps) gps.addEventListener("click", function () {
-    var box = document.getElementById("location");
-    if (!navigator.geolocation) { alert("Your browser does not support location."); return; }
-    gps.disabled = true; gps.textContent = "Locating…";
-    navigator.geolocation.getCurrentPosition(function (p) {
-      box.value = (box.value ? box.value + " " : "") + "(GPS " + p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5) + ")";
-      gps.disabled = false; gps.textContent = "📍 Use my location";
-    }, function () { gps.disabled = false; gps.textContent = "📍 Use my location"; alert("We could not get your location. Please type it instead."); });
-  });
-
-  /* --- Stop double submissions: disable the submit button after the first click --- */
-  document.querySelectorAll("form[data-once]").forEach(function (form) {
-    form.addEventListener("submit", function () {
-      var b = form.querySelector("button[type=submit]");
-      if (b) { b.disabled = true; b.textContent = "Please wait…"; }
-    });
-  });
-
-  /* --- Copy-to-clipboard buttons (tracking numbers) --- */
-  document.querySelectorAll("[data-copy]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(function () {
-        var old = b.textContent; b.textContent = "Copied ✓"; setTimeout(function () { b.textContent = old; }, 1500);
-      });
-    });
-  });
+(function(){"use strict";
+  var root=document.documentElement;
+  function theme(t){root.setAttribute("data-theme",t);try{localStorage.setItem("hl-theme",t)}catch(e){}var b=document.getElementById("theme-toggle");if(b)b.textContent=t==="dark"?"☀":"◐"}
+  var saved=null;try{saved=localStorage.getItem("hl-theme")}catch(e){}theme(saved||(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+  var toggle=document.getElementById("theme-toggle");if(toggle)toggle.addEventListener("click",function(){theme(root.getAttribute("data-theme")==="dark"?"light":"dark")});
+  var navBtn=document.getElementById("nav-toggle"),nav=document.getElementById("main-nav");if(navBtn&&nav)navBtn.addEventListener("click",function(){var open=nav.classList.toggle("open");navBtn.setAttribute("aria-expanded",open)});
+  document.addEventListener("keydown",function(e){if(e.key==="/"&&document.activeElement.tagName!=="INPUT"&&document.activeElement.tagName!=="TEXTAREA"){e.preventDefault();var s=document.getElementById("global-search");if(s)s.focus()}});
+  document.querySelectorAll("textarea[data-max]").forEach(function(area){var out=document.getElementById(area.id+"-count");function update(){if(out)out.textContent=area.value.length+" / "+area.dataset.max}area.addEventListener("input",update);update()});
+  var file=document.getElementById("image"),preview=document.getElementById("image-preview");if(file&&preview)file.addEventListener("change",function(){var f=file.files[0];preview.innerHTML="";if(!f)return;if(f.size>5*1024*1024){alert("That photo is larger than 5 MB. Please pick a smaller one.");file.value="";return}var img=document.createElement("img");img.alt="Preview of the selected photo";img.src=URL.createObjectURL(f);preview.appendChild(img)});
+  var gps=document.getElementById("use-gps");if(gps)gps.addEventListener("click",function(){var box=document.getElementById("location");if(!navigator.geolocation){alert("Your browser does not support location.");return}gps.disabled=true;gps.textContent="Locating…";navigator.geolocation.getCurrentPosition(function(p){box.value=(box.value?box.value+" ":"")+"(GPS "+p.coords.latitude.toFixed(5)+", "+p.coords.longitude.toFixed(5)+")";gps.disabled=false;gps.textContent="Use my location"},function(){gps.disabled=false;gps.textContent="Use my location";alert("We could not get your location. Please type it instead.")})});
+  document.querySelectorAll("form[data-once]").forEach(function(form){form.addEventListener("submit",function(){var b=form.querySelector("button[type=submit]");if(b){b.disabled=true;b.textContent="Please wait…"}})});
+  document.querySelectorAll("[data-copy]").forEach(function(b){b.addEventListener("click",function(){if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(function(){var old=b.textContent;b.textContent="Copied";setTimeout(function(){b.textContent=old},1500)})})});
+  var search=document.getElementById("global-search"),results=document.getElementById("global-search-results");
+  var index=[
+    {title:"Streetlight Fault",type:"Service",url:"/services?q=streetlight",terms:"streetlight lighting lamp power"},
+    {title:"Water Supply Problem",type:"Service",url:"/services?q=water",terms:"water tap pipe supply dry"},
+    {title:"Garbage Collection",type:"Service",url:"/services?q=garbage",terms:"garbage waste rubbish collection"},
+    {title:"Roads & Drainage",type:"Service",url:"/services?q=roads",terms:"road pothole drainage flood"},
+    {title:"Public Health & Sanitation",type:"Service",url:"/services?q=health",terms:"health sanitation toilet"},
+    {title:"Track a request",type:"Help",url:"/track",terms:"track reference status progress"},
+    {title:"How do I report a problem?",type:"Help",url:"/faq",terms:"report issue account submit"},
+    {title:"What do the statuses mean?",type:"Help",url:"/faq",terms:"pending progress resolved rejected status"}
+  ];
+  function closeResults(){if(!results)return;results.hidden=true;if(search)search.setAttribute("aria-expanded","false")}
+  function render(q){if(!results||!search)return;var value=q.trim().toLowerCase();if(!value){closeResults();return}var ref=/^hl-[0-9]{6}-[0-9a-f]{4,6}$/i.test(value);var matches=ref?[{title:"Track "+q.toUpperCase(),type:"Request reference",url:"/track?ref="+encodeURIComponent(q)}]:index.filter(function(item){return (item.title+" "+item.terms).toLowerCase().indexOf(value)>-1}).slice(0,6);results.innerHTML="";if(!matches.length){results.innerHTML='<div class="search-empty">No quick match. Press Enter to search the service directory.</div>'}else{matches.forEach(function(item){var a=document.createElement("a");a.className="search-result";a.href=item.url;a.setAttribute("role","option");a.innerHTML="<strong>"+item.title+"</strong><span>"+item.type+" · Open result ↗</span>";results.appendChild(a)})}results.hidden=false;search.setAttribute("aria-expanded","true")}
+  if(search){search.addEventListener("input",function(){render(search.value)});search.addEventListener("focus",function(){if(search.value)render(search.value)});search.addEventListener("keydown",function(e){if(e.key==="Escape")closeResults()});var searchForm=search.closest("form");if(searchForm)searchForm.addEventListener("submit",function(e){var value=search.value.trim();if(/^hl-[0-9]{6}-[0-9a-f]{4,6}$/i.test(value)){e.preventDefault();window.location.href="/track?ref="+encodeURIComponent(value)}})}document.addEventListener("click",function(e){if(results&&search&&!search.parentElement.contains(e.target))closeResults()});
 })();
+
+(function(){"use strict";var targets=document.querySelectorAll("[data-reveal]");if(!targets.length)return;if(!("IntersectionObserver" in window)){targets.forEach(function(el){el.classList.add("is-visible")});return}var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add("is-visible");observer.unobserve(entry.target)}})},{threshold:.18});targets.forEach(function(el){observer.observe(el)});})();
