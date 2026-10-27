@@ -61,12 +61,13 @@ def register():
             return render_template("auth/register.html", form=form), 409
 
         flash("Your account is ready. Please sign in.", "success")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login", registered="1"))
     return render_template("auth/register.html", form={})
 
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
+    registered = request.args.get("registered") == "1"
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -76,7 +77,7 @@ def login():
 
         if security.too_many_attempts(email):
             flash("Too many failed attempts. Please wait a few minutes and try again.", "error")
-            return render_template("auth/login.html", selected_role=account_type), 429
+            return render_template("auth/login.html", selected_role=account_type, registered=registered), 429
 
         user = get_db().execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         if user and user["role"] == account_type and check_password_hash(user["password_hash"], password):
@@ -89,11 +90,12 @@ def login():
 
         security.record_failure(email)
         if user and user["role"] != account_type:
-            flash("Choose the account type assigned to this email address.", "error")
+            role_name = "Administrator" if user["role"] == "admin" else "Citizen"
+            flash(f"This email is registered as a {role_name} account. Select {role_name} in the workspace selector.", "error")
         else:
             flash("That email and password do not match.", "error")
-        return render_template("auth/login.html", selected_role=account_type), 401
-    return render_template("auth/login.html", selected_role="citizen")
+        return render_template("auth/login.html", selected_role=account_type, registered=registered), 401
+    return render_template("auth/login.html", selected_role="citizen", registered=registered)
 
 
 @bp.route("/logout", methods=["POST"])

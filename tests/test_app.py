@@ -62,6 +62,7 @@ def test_post_without_csrf_is_rejected(client):
 
 def test_register_and_login(client):
     assert b"account is ready" in register(client).data
+    assert b"Account created" in client.get("/login?registered=1").data
     assert b"Welcome back" in login(client).data
 
 
