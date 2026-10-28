@@ -72,7 +72,7 @@ Demo accounts when `DEMO_MODE=1`:
 | Citizen | `citizen@hudumalink.demo` | `Citizen@2026` |
 | Administrator | `admin@hudumalink.demo` | `Admin@2026` |
 
-To test the admin workflow, open **Sign in**, choose **Administrator — manage the service queue**, and use the Administrator credentials above. Public registration creates Citizen accounts only.
+To test the admin workflow, open **Sign in**, choose **Administrator — manage the service queue**, and use the Administrator credentials above. Public registration creates Citizen accounts only. In the case editor, choose **In Progress** to approve/accept a Pending request, **Rejected** to decline it, or **Resolved** after the work is completed. The selected status and public note appear immediately on the citizen's tracking page.
 
 For a clean empty database, use `DEMO_MODE=0` and configure an administrator:
 
