@@ -13,3 +13,5 @@
 @media (max-width:700px){.county-identity{max-width:100%}.county-identity strong{font-size:.64rem}.vortex-content{min-height:460px}.vortex-actions{align-items:flex-start;flex-direction:column}.vortex-section{min-height:460px}}
 
 .auth-guidance{margin:1rem 0 0;background:var(--mint-2);border:1px solid #9ddab9;color:var(--forest)}
+
+.admin-demo-note{display:block;margin-top:.45rem;color:var(--amber)!important}

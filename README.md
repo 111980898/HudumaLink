@@ -72,6 +72,8 @@ Demo accounts when `DEMO_MODE=1`:
 | Citizen | `citizen@hudumalink.demo` | `Citizen@2026` |
 | Administrator | `admin@hudumalink.demo` | `Admin@2026` |
 
+To test the admin workflow, open **Sign in**, choose **Administrator — manage the service queue**, and use the Administrator credentials above. Public registration creates Citizen accounts only.
+
 For a clean empty database, use `DEMO_MODE=0` and configure an administrator:
 
 ```bash
