@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime, timezone
 
 from .constants import ALLOWED_TRANSITIONS, CATEGORIES, OPEN_STATUSES, STATUSES, SUB_COUNTIES
-from .db import utcnow
+from .db import insert_id, utcnow
 
 
 def make_reference() -> str:
@@ -28,12 +28,12 @@ def create_request(db, user, form, image_filename: str) -> str:
     cur = db.execute(
         "INSERT INTO service_requests (reference, user_id, category, subject, description, location, "
         "sub_county, priority, image_filename, status, department, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?) RETURNING id",
         (reference, user["id"], category, form["subject"], form["description"], form["location"],
          form["sub_county"], form["priority"], image_filename,
          CATEGORIES[category]["department"], now, now),
     )
-    add_history(db, cur.lastrowid, "", "Pending", "Request submitted by citizen.", user["full_name"])
+    add_history(db, insert_id(cur), "", "Pending", "Request submitted by citizen.", user["full_name"])
     return reference
 
 

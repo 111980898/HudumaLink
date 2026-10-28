@@ -82,6 +82,8 @@ export SECRET_KEY='use-a-long-random-value'
 python app.py
 ```
 
+For Vercel production, connect the project to Neon and let Vercel provide the pooled `DATABASE_URL` environment variable. The application automatically uses PostgreSQL when that variable is present and keeps SQLite for local development and tests.
+
 ## Environment variables
 
 | Variable | Purpose |
@@ -89,6 +91,7 @@ python app.py
 | `SECRET_KEY` | Signs session cookies; set a strong value outside local development |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Creates an approved administrator on first startup |
 | `DEMO_MODE` | Loads assessment sample data and demo accounts; defaults to `1`, set to `0` for a clean database |
+| `DATABASE_URL` | Neon PostgreSQL connection string for durable production data; Vercel supplies this after the Neon integration is connected |
 | `DATABASE_PATH` | SQLite database file location |
 | `UPLOAD_FOLDER` | Uploaded request-image location |
 | `SESSION_COOKIE_SECURE` | Keep `true` for HTTPS Preview; use `false` for local HTTP |
@@ -109,7 +112,7 @@ HudumaLink/
 │   ├── __init__.py                application factory and shared context
 │   ├── config.py                  environment configuration
 │   ├── constants.py               categories, roles, statuses, and service rules
-│   ├── db.py                      SQLite schema and initialization
+│   ├── db.py                      SQLite/Neon schema and initialization
 │   ├── security.py                CSRF, login throttling, access control, upload checks
 │   ├── services.py                business rules and analytics queries
 │   ├── blueprints/                public, auth, citizen, and admin routes

@@ -1,13 +1,12 @@
 """Registration, sign-in and sign-out."""
 import re
-import sqlite3
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .. import security
 from ..constants import SUB_COUNTIES
-from ..db import get_db, utcnow
+from ..db import DB_INTEGRITY_ERRORS, get_db, utcnow
 
 bp = Blueprint("auth", __name__)
 
@@ -56,7 +55,7 @@ def register():
                 (form["full_name"], form["email"], form["phone"], form["sub_county"],
                  generate_password_hash(password), utcnow()))
             db.commit()
-        except sqlite3.IntegrityError:
+        except DB_INTEGRITY_ERRORS:
             flash("An account with that email already exists. Try signing in.", "error")
             return render_template("auth/register.html", form=form), 409
 

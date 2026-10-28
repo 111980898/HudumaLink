@@ -16,7 +16,8 @@ def env_bool(name: str, default: bool) -> bool:
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-only-secret-change-me"
-    DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.path.join(WRITABLE_ROOT, "hudumalink.db")
+    DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+    DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.path.join(WRITABLE_ROOT, "instance", "hudumalink.db")
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or os.path.join(WRITABLE_ROOT, "uploads")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     PER_PAGE = 10
