@@ -1,5 +1,6 @@
 """Jinja filters that turn raw database values into friendly text."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from markupsafe import Markup
 
@@ -20,6 +21,7 @@ def register_filters(app):
         if not value:
             return "—"
         from datetime import timedelta
+
         return (_dt(value) + timedelta(hours=3)).strftime("%d %b %Y, %H:%M")
 
     @app.template_filter("ago")
@@ -27,7 +29,7 @@ def register_filters(app):
         """-> '3 days ago' / 'just now'."""
         if not value:
             return "—"
-        seconds = (datetime.now(timezone.utc) - _dt(value)).total_seconds()
+        seconds = (datetime.now(UTC) - _dt(value)).total_seconds()
         for span, name in ((86400, "day"), (3600, "hour"), (60, "minute")):
             if seconds >= span:
                 n = int(seconds // span)

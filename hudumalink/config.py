@@ -1,4 +1,5 @@
 """Environment-driven configuration for HudumaLink."""
+
 import hashlib
 import os
 import tempfile
@@ -22,10 +23,12 @@ class Config:
     # from its private DATABASE_URL so sessions remain valid across instances.
     SECRET_KEY = os.environ.get("SECRET_KEY") or (
         hashlib.sha256(DATABASE_URL.encode("utf-8")).hexdigest()
-        if ON_SERVERLESS and DATABASE_URL else
-        ("dev-only-secret-change-me" if not ON_SERVERLESS else "")
+        if ON_SERVERLESS and DATABASE_URL
+        else ("dev-only-secret-change-me" if not ON_SERVERLESS else "")
     )
-    DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.path.join(WRITABLE_ROOT, "instance", "hudumalink.db")
+    DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.path.join(
+        WRITABLE_ROOT, "instance", "hudumalink.db"
+    )
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or os.path.join(WRITABLE_ROOT, "uploads")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     PER_PAGE = 10

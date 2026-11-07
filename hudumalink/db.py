@@ -6,10 +6,11 @@ the same parameterised queries run against Neon PostgreSQL so registrations,
 requests, tracking history, notifications, and admin updates persist across
 Vercel serverless instances.
 """
+
 import os
 import random
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from flask import current_app, g
 from werkzeug.security import generate_password_hash
@@ -20,6 +21,7 @@ try:  # Optional locally; production installs psycopg from requirements.txt.
     import psycopg
     from psycopg import IntegrityError as PostgresIntegrityError
 except ImportError:  # pragma: no cover - exercised only in SQLite-only installs.
+
     class PostgresIntegrityError(Exception):
         pass
 
@@ -28,6 +30,7 @@ except ImportError:  # pragma: no cover - exercised only in SQLite-only installs
 
 class HybridRow(dict):
     """A PostgreSQL row that supports both row['column'] and row[0]."""
+
     def __getitem__(self, key):
         if isinstance(key, int):
             return list(self.values())[key]
@@ -40,7 +43,7 @@ def hybrid_row(cursor):
     columns = [column.name for column in cursor.description]
 
     def make_row(values):
-        return HybridRow(zip(columns, values))
+        return HybridRow(zip(columns, values, strict=True))
 
     return make_row
 
@@ -105,13 +108,12 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     last_at     DOUBLE PRECISION NOT NULL
 );
 """
-POSTGRES_SCHEMA = SCHEMA.replace(
-    "INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"
-)
+POSTGRES_SCHEMA = SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY")
 
 
 class DatabaseConnection:
     """Small compatibility wrapper around sqlite3 or psycopg."""
+
     def __init__(self, connection, postgres=False):
         self.connection = connection
         self.is_postgres = postgres
@@ -124,8 +126,8 @@ class DatabaseConnection:
     def executescript(self, script):
         if not self.is_postgres:
             return self.connection.executescript(script)
-        for statement in script.split(";"):
-            statement = statement.strip()
+        for raw_statement in script.split(";"):
+            statement = raw_statement.strip()
             if statement:
                 self.connection.execute(statement)
 
@@ -137,7 +139,7 @@ class DatabaseConnection:
 
 
 def utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def insert_id(cursor):
@@ -212,32 +214,127 @@ def _seed_demo_data(db) -> None:
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0]:
         return
 
-    now = datetime.now(timezone.utc)
-    stamp = lambda days_ago: (now - timedelta(days=days_ago)).isoformat(timespec="seconds")
+    now = datetime.now(UTC)
+
+    def stamp(days_ago):
+        return (now - timedelta(days=days_ago)).isoformat(timespec="seconds")
+
     db.execute(
         "INSERT INTO users (full_name, email, phone, sub_county, password_hash, role, created_at) "
         "VALUES (?, ?, ?, ?, ?, 'admin', ?) ON CONFLICT (email) DO NOTHING",
-        ("Demo Administrator", "admin@hudumalink.demo", "0700000001", "Kiharu",
-         generate_password_hash("Admin@2026"), stamp(30)),
+        (
+            "Demo Administrator",
+            "admin@hudumalink.demo",
+            "0700000001",
+            "Kiharu",
+            generate_password_hash("Admin@2026"),
+            stamp(30),
+        ),
     )
     db.execute(
         "INSERT INTO users (full_name, email, phone, sub_county, password_hash, role, created_at) "
         "VALUES (?, ?, ?, ?, ?, 'citizen', ?) ON CONFLICT (email) DO NOTHING",
-        ("Wanjiru Njeri", "citizen@hudumalink.demo", "0700000002", "Kigumo",
-         generate_password_hash("Citizen@2026"), stamp(28)),
+        (
+            "Wanjiru Njeri",
+            "citizen@hudumalink.demo",
+            "0700000002",
+            "Kigumo",
+            generate_password_hash("Citizen@2026"),
+            stamp(28),
+        ),
     )
 
     samples = [
-        ("Streetlight Fault", "Streetlight out near Kenol stage", "Kenol Market, Mombasa Rd", "Kigumo", "High", "Resolved", 12),
-        ("Water Supply Problem", "No water for three days", "Kiriaini Estate, Block C", "Mathioya", "Urgent", "In Progress", 4),
-        ("Garbage Collection", "Uncollected garbage at the market", "Murang'a Town Market", "Kiharu", "Normal", "Pending", 2),
-        ("Roads & Drainage", "Pothole damaging vehicles", "Kangari–Kandara Road", "Kandara", "High", "In Progress", 9),
-        ("Public Health & Sanitation", "Blocked public toilet", "Maragua Bus Park", "Maragwa", "Normal", "Resolved", 15),
-        ("Streetlight Fault", "Three lamps flickering", "Kangema Town Centre", "Kangema", "Low", "Pending", 1),
-        ("Roads & Drainage", "Drainage overflowing onto road", "Gatanga Junction", "Gatanga", "Urgent", "Pending", 6),
-        ("Garbage Collection", "Illegal dumping beside river", "Sagana Bridge", "Kigumo", "Normal", "Resolved", 20),
-        ("Water Supply Problem", "Burst pipe wasting water", "Kenol–Sagana Road", "Kigumo", "Urgent", "Resolved", 8),
-        ("Other Public Service", "Request for a new notice board", "Kiharu Ward Office", "Kiharu", "Low", "Rejected", 11),
+        (
+            "Streetlight Fault",
+            "Streetlight out near Kenol stage",
+            "Kenol Market, Mombasa Rd",
+            "Kigumo",
+            "High",
+            "Resolved",
+            12,
+        ),
+        (
+            "Water Supply Problem",
+            "No water for three days",
+            "Kiriaini Estate, Block C",
+            "Mathioya",
+            "Urgent",
+            "In Progress",
+            4,
+        ),
+        (
+            "Garbage Collection",
+            "Uncollected garbage at the market",
+            "Murang'a Town Market",
+            "Kiharu",
+            "Normal",
+            "Pending",
+            2,
+        ),
+        (
+            "Roads & Drainage",
+            "Pothole damaging vehicles",
+            "Kangari–Kandara Road",
+            "Kandara",
+            "High",
+            "In Progress",
+            9,
+        ),
+        (
+            "Public Health & Sanitation",
+            "Blocked public toilet",
+            "Maragua Bus Park",
+            "Maragwa",
+            "Normal",
+            "Resolved",
+            15,
+        ),
+        (
+            "Streetlight Fault",
+            "Three lamps flickering",
+            "Kangema Town Centre",
+            "Kangema",
+            "Low",
+            "Pending",
+            1,
+        ),
+        (
+            "Roads & Drainage",
+            "Drainage overflowing onto road",
+            "Gatanga Junction",
+            "Gatanga",
+            "Urgent",
+            "Pending",
+            6,
+        ),
+        (
+            "Garbage Collection",
+            "Illegal dumping beside river",
+            "Sagana Bridge",
+            "Kigumo",
+            "Normal",
+            "Resolved",
+            20,
+        ),
+        (
+            "Water Supply Problem",
+            "Burst pipe wasting water",
+            "Kenol–Sagana Road",
+            "Kigumo",
+            "Urgent",
+            "Resolved",
+            8,
+        ),
+        (
+            "Other Public Service",
+            "Request for a new notice board",
+            "Kiharu Ward Office",
+            "Kiharu",
+            "Low",
+            "Rejected",
+            11,
+        ),
     ]
     random.seed(7)
     for i, (cat, subject, loc, sub, prio, status, ago) in enumerate(samples, start=1):
@@ -245,28 +342,54 @@ def _seed_demo_data(db) -> None:
         resolved = stamp(max(ago - 3, 0)) if status == "Resolved" else None
         ref = f"HL-{(now - timedelta(days=ago)).strftime('%y%m%d')}-{random.randrange(16**4):04X}"
         cur = db.execute(
-            "INSERT INTO service_requests (reference, user_id, category, subject, description, location, "
-            "sub_county, priority, status, department, public_note, rating, created_at, updated_at, resolved_at) "
+            "INSERT INTO service_requests (reference, user_id, category, subject, "
+            "description, location, sub_county, priority, status, department, "
+            "public_note, rating, created_at, updated_at, resolved_at) "
             "VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
-            (ref, cat, subject,
-             f"Reported by a resident: {subject.lower()}. Please attend as soon as possible.",
-             loc, sub, prio, status, CATEGORIES[cat]["department"],
-             "Crew dispatched and the issue has been fixed." if status == "Resolved" else "",
-             5 if status == "Resolved" and i % 2 else None,
-             created, resolved or created, resolved),
+            (
+                ref,
+                cat,
+                subject,
+                f"Reported by a resident: {subject.lower()}. Please attend as soon as possible.",
+                loc,
+                sub,
+                prio,
+                status,
+                CATEGORIES[cat]["department"],
+                "Crew dispatched and the issue has been fixed." if status == "Resolved" else "",
+                5 if status == "Resolved" and i % 2 else None,
+                created,
+                resolved or created,
+                resolved,
+            ),
         )
         rid = insert_id(cur)
-        db.execute("INSERT INTO status_history (request_id, new_status, note, changed_by, created_at) "
-                   "VALUES (?, 'Pending', 'Request submitted by citizen.', 'Wanjiru Njeri', ?)", (rid, created))
+        db.execute(
+            "INSERT INTO status_history (request_id, new_status, note, changed_by, created_at) "
+            "VALUES (?, 'Pending', 'Request submitted by citizen.', 'Wanjiru Njeri', ?)",
+            (rid, created),
+        )
         if status in ("In Progress", "Resolved"):
-            db.execute("INSERT INTO status_history (request_id, old_status, new_status, note, changed_by, created_at) "
-                       "VALUES (?, 'Pending', 'In Progress', 'Assigned to the field team.', 'Demo Administrator', ?)",
-                       (rid, stamp(max(ago - 1, 0))))
+            db.execute(
+                "INSERT INTO status_history (request_id, old_status, new_status, note, "
+                "changed_by, created_at) "
+                "VALUES (?, 'Pending', 'In Progress', 'Assigned to the field team.', "
+                "'Demo Administrator', ?)",
+                (rid, stamp(max(ago - 1, 0))),
+            )
         if status == "Resolved":
-            db.execute("INSERT INTO status_history (request_id, old_status, new_status, note, changed_by, created_at) "
-                       "VALUES (?, 'In Progress', 'Resolved', 'Work completed and verified.', 'Demo Administrator', ?)",
-                       (rid, resolved))
+            db.execute(
+                "INSERT INTO status_history (request_id, old_status, new_status, note, "
+                "changed_by, created_at) "
+                "VALUES (?, 'In Progress', 'Resolved', 'Work completed and verified.', "
+                "'Demo Administrator', ?)",
+                (rid, resolved),
+            )
         if status == "Rejected":
-            db.execute("INSERT INTO status_history (request_id, old_status, new_status, note, changed_by, created_at) "
-                       "VALUES (?, 'Pending', 'Rejected', 'Outside the scope of county services.', 'Demo Administrator', ?)",
-                       (rid, stamp(max(ago - 1, 0))))
+            db.execute(
+                "INSERT INTO status_history (request_id, old_status, new_status, note, "
+                "changed_by, created_at) "
+                "VALUES (?, 'Pending', 'Rejected', 'Outside the scope of county services.', "
+                "'Demo Administrator', ?)",
+                (rid, stamp(max(ago - 1, 0))),
+            )

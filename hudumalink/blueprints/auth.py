@@ -1,4 +1,5 @@
 """Registration, sign-in and sign-out."""
+
 import re
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
@@ -25,7 +26,10 @@ def validate_password(password: str) -> str | None:
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        form = {k: request.form.get(k, "").strip()[:254] for k in ("full_name", "email", "phone", "sub_county")}
+        form = {
+            k: request.form.get(k, "").strip()[:254]
+            for k in ("full_name", "email", "phone", "sub_county")
+        }
         form["full_name"] = form["full_name"][:120]
         form["phone"] = form["phone"][:20]
         form["email"] = form["email"].lower()
@@ -54,10 +58,18 @@ def register():
             # Public sign-up ALWAYS creates a citizen. Administrators are
             # created by the system owner (see README), never by the public.
             db.execute(
-                "INSERT INTO users (full_name, email, phone, sub_county, password_hash, role, created_at) "
+                "INSERT INTO users (full_name, email, phone, sub_county, password_hash, "
+                "role, created_at) "
                 "VALUES (?, ?, ?, ?, ?, 'citizen', ?)",
-                (form["full_name"], form["email"], form["phone"], form["sub_county"],
-                 generate_password_hash(password), utcnow()))
+                (
+                    form["full_name"],
+                    form["email"],
+                    form["phone"],
+                    form["sub_county"],
+                    generate_password_hash(password),
+                    utcnow(),
+                ),
+            )
             db.commit()
         except DB_INTEGRITY_ERRORS:
             flash("An account with that email already exists. Try signing in.", "error")
@@ -80,12 +92,21 @@ def login():
 
         if security.too_many_attempts(email):
             flash("Too many failed attempts. Please wait a few minutes and try again.", "error")
-            return render_template("auth/login.html", selected_role=account_type, registered=registered), 429
+            return (
+                render_template(
+                    "auth/login.html", selected_role=account_type, registered=registered
+                ),
+                429,
+            )
 
         user = get_db().execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        if user and user["role"] == account_type and check_password_hash(user["password_hash"], password):
+        if (
+            user
+            and user["role"] == account_type
+            and check_password_hash(user["password_hash"], password)
+        ):
             security.clear_failures(email)
-            session.clear()                       # new session = no fixation
+            session.clear()  # new session = no fixation
             session.update(user_id=user["id"], name=user["full_name"], role=user["role"])
             flash(f"Welcome back, {user['full_name'].split()[0]}.", "success")
             home = url_for("admin.dashboard" if user["role"] == "admin" else "citizen.dashboard")
@@ -95,7 +116,10 @@ def login():
         # Keep the failure response generic so attackers cannot enumerate
         # registered emails or account roles.
         flash("That email, password, or workspace selection is not valid.", "error")
-        return render_template("auth/login.html", selected_role=account_type, registered=registered), 401
+        return (
+            render_template("auth/login.html", selected_role=account_type, registered=registered),
+            401,
+        )
     return render_template("auth/login.html", selected_role="citizen", registered=registered)
 
 

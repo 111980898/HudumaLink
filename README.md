@@ -111,6 +111,18 @@ pip install pytest
 python -m pytest -q
 ```
 
+## Code quality
+
+The Python source follows a consistent Black format and Ruff lint profile. Before opening a pull request, run:
+
+```bash
+black --line-length 100 app.py hudumalink tests
+ruff check app.py hudumalink tests
+python -m pytest -q
+```
+
+The application is split into small Flask blueprints, database helpers, security helpers, and service functions so that each part has one clear responsibility.
+
 ## Project structure
 
 ```text
