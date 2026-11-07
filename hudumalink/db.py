@@ -43,7 +43,7 @@ def hybrid_row(cursor):
     columns = [column.name for column in cursor.description]
 
     def make_row(values):
-        return HybridRow(zip(columns, values, strict=True))
+        return HybridRow(zip(columns, values, strict=False))
 
     return make_row
 
