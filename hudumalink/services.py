@@ -6,7 +6,7 @@ SQL that answers questions like "how many cases are overdue?" lives here.
 """
 
 import secrets
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from .constants import (
     ALLOWED_TRANSITIONS,
@@ -19,7 +19,9 @@ from .db import insert_id, utcnow
 
 def make_reference() -> str:
     """Human-friendly, hard-to-guess tracking ID, e.g. ``HL-261020-9F3A1C``."""
-    return "HL-" + datetime.now(UTC).strftime("%y%m%d") + "-" + secrets.token_hex(3).upper()
+    return (
+        "HL-" + datetime.now(timezone.utc).strftime("%y%m%d") + "-" + secrets.token_hex(3).upper()
+    )
 
 
 def parse_ts(value: str | None) -> datetime | None:
@@ -164,7 +166,7 @@ def breakdown(db, column: str, labels: list[str]) -> list[dict]:
 
 def overdue_ids(db) -> set[int]:
     """IDs of open requests older than their category's service-level target."""
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     late = set()
     for r in db.execute(
         "SELECT id, category, created_at FROM service_requests WHERE status IN (?, ?)",
@@ -180,7 +182,7 @@ def daily_trend(db, days: int = 14) -> dict:
     """Submitted vs resolved per day for the last ``days`` days, as SVG points."""
     from datetime import timedelta
 
-    today = datetime.now(UTC).date()
+    today = datetime.now(timezone.utc).date()
     labels = [(today - timedelta(days=i)) for i in range(days - 1, -1, -1)]
     submitted = {d: 0 for d in labels}
     resolved = {d: 0 for d in labels}

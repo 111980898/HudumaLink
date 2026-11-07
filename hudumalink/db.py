@@ -10,7 +10,7 @@ Vercel serverless instances.
 import os
 import random
 import sqlite3
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app, g
 from werkzeug.security import generate_password_hash
@@ -139,7 +139,7 @@ class DatabaseConnection:
 
 
 def utcnow() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def insert_id(cursor):
@@ -214,7 +214,7 @@ def _seed_demo_data(db) -> None:
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0]:
         return
 
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
 
     def stamp(days_ago):
         return (now - timedelta(days=days_ago)).isoformat(timespec="seconds")
