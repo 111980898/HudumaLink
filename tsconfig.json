@@ -4,9 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
-    "strict": true,
-    "baseUrl": ".",
-    "paths": { "@/*": ["./*"] }
+    "strict": true
   },
   "include": ["components/**/*.tsx", "components/**/*.ts"]
 }

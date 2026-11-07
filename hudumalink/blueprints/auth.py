@@ -25,7 +25,9 @@ def validate_password(password: str) -> str | None:
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        form = {k: request.form.get(k, "").strip() for k in ("full_name", "email", "phone", "sub_county")}
+        form = {k: request.form.get(k, "").strip()[:254] for k in ("full_name", "email", "phone", "sub_county")}
+        form["full_name"] = form["full_name"][:120]
+        form["phone"] = form["phone"][:20]
         form["email"] = form["email"].lower()
         password = request.form.get("password", "")
 
@@ -38,6 +40,8 @@ def register():
             error = "Please choose your sub-county."
         elif form["phone"] and not re.fullmatch(r"(\+254|0)\d{9}", form["phone"].replace(" ", "")):
             error = "Phone numbers look like 0712345678 or +254712345678."
+        elif len(password) > 256:
+            error = "Use a password of 256 characters or fewer."
         else:
             error = validate_password(password)
 
@@ -68,8 +72,8 @@ def register():
 def login():
     registered = request.args.get("registered") == "1"
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "")
+        email = request.form.get("email", "").strip().lower()[:254]
+        password = request.form.get("password", "")[:256]
         account_type = request.form.get("account_type", "citizen").strip().lower()
         if account_type not in {"citizen", "admin"}:
             account_type = "citizen"
@@ -88,11 +92,9 @@ def login():
             return redirect(security.safe_next_url(request.args.get("next", ""), home))
 
         security.record_failure(email)
-        if user and user["role"] != account_type:
-            role_name = "Administrator" if user["role"] == "admin" else "Citizen"
-            flash(f"This email is registered as a {role_name} account. Select {role_name} in the workspace selector.", "error")
-        else:
-            flash("That email and password do not match.", "error")
+        # Keep the failure response generic so attackers cannot enumerate
+        # registered emails or account roles.
+        flash("That email, password, or workspace selection is not valid.", "error")
         return render_template("auth/login.html", selected_role=account_type, registered=registered), 401
     return render_template("auth/login.html", selected_role="citizen", registered=registered)
 

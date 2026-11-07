@@ -60,6 +60,39 @@ def test_post_without_csrf_is_rejected(client):
     assert client.post("/login", data={"email": "x", "password": "y"}).status_code == 400
 
 
+def test_security_headers_and_debug_are_enabled_safely(client):
+    response = client.get("/")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+    assert "frame-ancestors https://*.manus.computer" in response.headers["Content-Security-Policy"]
+    assert client.application.debug is False
+
+
+def test_login_bruteforce_is_throttled_durably(client):
+    for _ in range(5):
+        response = client.post("/login", data={
+            "csrf_token": token(client), "email": "guess@test.dev", "password": "wrong",
+            "account_type": "citizen",
+        })
+        assert response.status_code == 401
+    blocked = client.post("/login", data={
+        "csrf_token": token(client), "email": "guess@test.dev", "password": "wrong",
+        "account_type": "citizen",
+    })
+    assert blocked.status_code == 429
+
+
+def test_login_failure_does_not_reveal_account_or_role(client):
+    register(client)
+    response = client.post("/login", data={
+        "csrf_token": token(client), "email": "a@test.dev", "password": "wrong",
+        "account_type": "admin",
+    })
+    assert response.status_code == 401
+    assert b"registered as" not in response.data
+    assert b"not valid" in response.data
+
+
 def test_register_and_login(client):
     assert b"account is ready" in register(client).data
     assert b"Account created" in client.get("/login?registered=1").data

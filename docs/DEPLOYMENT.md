@@ -23,4 +23,6 @@ Set these environment variables in Vercel:
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD`: an approved administrator account
 - `SESSION_COOKIE_SECURE`: `true` for HTTPS
 
-SQLite storage is suitable for an assessment demo. For production, use a hosted database and durable object storage for uploaded images.
+For assessment mode, `DEMO_MODE=1` exposes the documented demo accounts. Before a real public launch, set `DEMO_MODE=0`, replace the demo administrator with a private `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and set a new long random `SECRET_KEY`. The application refuses to start outside tests if a production/serverless secret is missing.
+
+The application uses Neon PostgreSQL when `DATABASE_URL` is present and SQLite for local tests. Uploaded images should use durable object storage in production.

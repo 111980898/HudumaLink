@@ -1,7 +1,10 @@
 """
-Security helpers: CSRF protection, access-control decorators, login throttling
-and upload validation. Kept separate so the rules are easy to audit.
+Security helpers for Huduma Link.
+
+The login limiter is stored in the application database rather than process
+memory so it remains effective when Vercel routes requests to new instances.
 """
+import hashlib
 import secrets
 import time
 from functools import wraps
@@ -57,27 +60,59 @@ def safe_next_url(target: str, fallback: str) -> str:
 
 
 # --- Login throttling -------------------------------------------------------
-# In-memory is fine for a single-process demo; a real deployment would use Redis.
-_failures: dict[str, list[float]] = {}
+def _bucket(value: str) -> str:
+    """Hash the limiter key so email/IP values are not stored in plain text."""
+    secret = current_app.config["SECRET_KEY"]
+    return hashlib.sha256(f"{secret}|{value}".encode("utf-8")).hexdigest()
 
 
-def _key(email: str) -> str:
-    return f"{email}|{request.remote_addr}"
+def _keys(email: str) -> tuple[str, str]:
+    normalized_email = email.strip().lower()[:254]
+    remote_addr = (request.remote_addr or "unknown")[:128]
+    # Check both identity+address and address-wide buckets. This prevents an
+    # attacker from bypassing limits simply by trying many email addresses.
+    return _bucket(f"email:{normalized_email}|ip:{remote_addr}"), _bucket(f"ip:{remote_addr}")
+
+
+def _recent_attempts(bucket: str) -> int:
+    from .db import get_db
+    row = get_db().execute(
+        "SELECT attempts, first_at FROM login_attempts WHERE bucket = ?", (bucket,)
+    ).fetchone()
+    if not row:
+        return 0
+    now = time.time()
+    if now - float(row["first_at"]) >= current_app.config["LOGIN_WINDOW_SECONDS"]:
+        get_db().execute("DELETE FROM login_attempts WHERE bucket = ?", (bucket,))
+        get_db().commit()
+        return 0
+    return int(row["attempts"])
 
 
 def too_many_attempts(email: str) -> bool:
-    window = current_app.config["LOGIN_WINDOW_SECONDS"]
-    recent = [t for t in _failures.get(_key(email), []) if time.time() - t < window]
-    _failures[_key(email)] = recent
-    return len(recent) >= current_app.config["LOGIN_MAX_ATTEMPTS"]
+    return any(_recent_attempts(bucket) >= current_app.config["LOGIN_MAX_ATTEMPTS"]
+               for bucket in _keys(email))
 
 
 def record_failure(email: str) -> None:
-    _failures.setdefault(_key(email), []).append(time.time())
+    from .db import get_db
+    now = time.time()
+    db = get_db()
+    for bucket in _keys(email):
+        db.execute(
+            "INSERT INTO login_attempts (bucket, attempts, first_at, last_at) VALUES (?, 1, ?, ?) "
+            "ON CONFLICT(bucket) DO UPDATE SET attempts = login_attempts.attempts + 1, last_at = excluded.last_at",
+            (bucket, now, now),
+        )
+    db.commit()
 
 
 def clear_failures(email: str) -> None:
-    _failures.pop(_key(email), None)
+    from .db import get_db
+    db = get_db()
+    for bucket in _keys(email):
+        db.execute("DELETE FROM login_attempts WHERE bucket = ?", (bucket,))
+    db.commit()
 
 
 # --- Upload validation ------------------------------------------------------

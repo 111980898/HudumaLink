@@ -86,6 +86,12 @@ python app.py
 
 For Vercel production, connect the project to Neon and let Vercel provide the pooled `DATABASE_URL` environment variable. The application automatically uses PostgreSQL when that variable is present and keeps SQLite for local development and tests.
 
+## Pre-deployment security review
+
+The deployment is hardened with CSRF protection on every POST, durable hashed login-attempt throttling across serverless instances, generic login failures that do not reveal whether an email or role exists, strict admin authorization, password hashing, parameterized database queries, upload signature validation, secure HTTPS cookies, production debug disabled, secret-key fail-closed behavior, security headers, same-origin form actions, safe local redirects, and checks that common environment/database files are not exposed. The automated suite covers these controls and is run before each deployment.
+
+The `DEMO_MODE=1` administrator account is intentionally available for assessment testing. It is not suitable for a real public deployment; set `DEMO_MODE=0`, configure a private `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and rotate `SECRET_KEY` before launch.
+
 ## Environment variables
 
 | Variable | Purpose |

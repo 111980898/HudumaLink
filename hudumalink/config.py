@@ -15,7 +15,7 @@ def env_bool(name: str, default: bool) -> bool:
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-only-secret-change-me"
+    SECRET_KEY = os.environ.get("SECRET_KEY") or ("dev-only-secret-change-me" if not ON_SERVERLESS else "")
     DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
     DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.path.join(WRITABLE_ROOT, "instance", "hudumalink.db")
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or os.path.join(WRITABLE_ROOT, "uploads")
@@ -24,7 +24,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     # Preview is embedded cross-site over HTTPS. Local HTTP can set this to false.
     SESSION_COOKIE_SAMESITE = "None"
-    SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", True)
+    SESSION_COOKIE_SECURE = True if ON_SERVERLESS else env_bool("SESSION_COOKIE_SECURE", True)
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
     # Keep the assessment/Preview experience populated. Set DEMO_MODE=0 for a clean deployment.

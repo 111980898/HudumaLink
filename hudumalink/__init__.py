@@ -1,7 +1,7 @@
 """HudumaLink application factory."""
 import os
 
-from flask import Flask, render_template, session
+from flask import Flask, render_template, request, session
 
 from . import db, security
 from .config import Config
@@ -13,6 +13,9 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
+    app.config["DEBUG"] = False
+    if not app.config.get("TESTING") and not app.config.get("SECRET_KEY"):
+        raise RuntimeError("SECRET_KEY must be configured outside local testing")
     if app.config.get("TESTING") and "SESSION_COOKIE_SECURE" not in (test_config or {}):
         app.config["SESSION_COOKIE_SECURE"] = False
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -28,6 +31,25 @@ def create_app(test_config: dict | None = None) -> Flask:
         from flask import request
         if request.method == "POST":
             security.verify_csrf()
+
+    @app.after_request
+    def _security_headers(response):
+        """Apply baseline browser protections to every response."""
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; base-uri 'self'; object-src 'none'; "
+            "form-action 'self'; frame-ancestors https://*.manus.computer; "
+            "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; "
+            "connect-src 'self'",
+        )
+        private_paths = ("/login", "/register", "/admin", "/dashboard", "/requests", "/profile", "/notifications")
+        if session.get("user_id") or request.path.startswith(private_paths):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     app.jinja_env.globals.update(
         CATEGORIES=CATEGORIES,
