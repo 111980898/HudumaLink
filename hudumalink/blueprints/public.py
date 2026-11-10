@@ -1,5 +1,13 @@
 """Pages anyone can open without signing in."""
-from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
+
+from flask import (
+    Blueprint,
+    current_app,
+    jsonify,
+    render_template,
+    request,
+    send_from_directory,
+)
 
 from .. import services
 from ..constants import CATEGORIES
@@ -13,9 +21,14 @@ def home():
     db = get_db()
     recent = db.execute(
         "SELECT reference, category, subject, sub_county, status, updated_at FROM service_requests "
-        "ORDER BY updated_at DESC LIMIT 5").fetchall()
-    return render_template("public/home.html", stats=services.public_stats(db), recent=recent,
-                           satisfaction=services.satisfaction(db))
+        "ORDER BY updated_at DESC LIMIT 5"
+    ).fetchall()
+    return render_template(
+        "public/home.html",
+        stats=services.public_stats(db),
+        recent=recent,
+        satisfaction=services.satisfaction(db),
+    )
 
 
 @bp.route("/track", methods=["GET"])
@@ -25,10 +38,13 @@ def track():
     item = history = None
     if reference:
         db = get_db()
-        item = db.execute("SELECT * FROM service_requests WHERE reference = ?", (reference,)).fetchone()
+        item = db.execute(
+            "SELECT * FROM service_requests WHERE reference = ?", (reference,)
+        ).fetchone()
         if item:
             history = db.execute(
-                "SELECT * FROM status_history WHERE request_id = ? ORDER BY id", (item["id"],)).fetchall()
+                "SELECT * FROM status_history WHERE request_id = ? ORDER BY id", (item["id"],)
+            ).fetchall()
     return render_template("public/track.html", reference=reference, item=item, history=history)
 
 
@@ -38,8 +54,11 @@ def services_page():
     items = list(CATEGORIES.items())
     if query:
         needle = query.lower()
-        items = [(name, info) for name, info in items
-                 if needle in name.lower() or needle in info["department"].lower()]
+        items = [
+            (name, info)
+            for name, info in items
+            if needle in name.lower() or needle in info["department"].lower()
+        ]
     return render_template("public/services.html", query=query, service_items=items)
 
 
@@ -62,5 +81,17 @@ def route_manifest():
 
 @bp.route("/_app/health")
 def health():
-    """Unauthenticated readiness response used by the published container."""
+    """Unauthenticated liveness response for Vercel and uptime monitors."""
     return jsonify(status="ok", service="huduma-link"), 200
+
+
+@bp.route("/_app/ready")
+def ready():
+    """Report whether the application can reach the configured database."""
+    try:
+        db = get_db()
+        db.execute("SELECT COUNT(*) FROM users").fetchone()
+    except Exception:
+        current_app.logger.exception("Huduma Link readiness check failed")
+        return jsonify(status="degraded", service="huduma-link", database="unavailable"), 503
+    return jsonify(status="ready", service="huduma-link", database="ok"), 200

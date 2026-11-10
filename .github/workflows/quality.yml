@@ -1,0 +1,32 @@
+name: Huduma Link quality gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install production and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt ruff black pytest
+      - name: Verify imports and application routes
+        run: python -c "from app import app; print(app.url_map)"
+      - name: Compile Python source
+        run: python -m compileall -q app.py hudumalink
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Check formatting and lint
+        run: |
+          black --check --line-length 100 hudumalink/__init__.py hudumalink/blueprints/public.py scripts
+          ruff check hudumalink/__init__.py hudumalink/blueprints/public.py tests/test_app.py scripts
+      - name: Smoke-test the current production URL
+        run: python scripts/production_smoke.py
