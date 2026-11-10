@@ -1,19 +1,9 @@
 """Everything a signed-in citizen does: file requests, follow progress, give feedback."""
-
 import os
 import secrets
 
-from flask import (
-    Blueprint,
-    abort,
-    current_app,
-    flash,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from flask import (Blueprint, abort, current_app, flash, redirect, render_template,
+                   request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -42,28 +32,18 @@ def dashboard():
         args.append(status)
     rows = db.execute(sql + " ORDER BY id DESC", args).fetchall()
     notes = db.execute(
-        "SELECT n.*, r.reference FROM notifications n "
-        "JOIN service_requests r ON r.id = n.request_id "
-        "WHERE n.user_id = ? ORDER BY n.id DESC LIMIT 8",
-        (session["user_id"],),
-    ).fetchall()
-    return render_template(
-        "citizen/dashboard.html",
-        requests=rows,
-        notifications=notes,
-        stats=services.overall_stats(db, session["user_id"]),
-        active=status,
-    )
+        "SELECT n.*, r.reference FROM notifications n JOIN service_requests r ON r.id = n.request_id "
+        "WHERE n.user_id = ? ORDER BY n.id DESC LIMIT 8", (session["user_id"],)).fetchall()
+    return render_template("citizen/dashboard.html", requests=rows, notifications=notes,
+                           stats=services.overall_stats(db, session["user_id"]), active=status)
 
 
 @bp.route("/requests/new", methods=["GET", "POST"])
 @security.login_required
 def new_request():
     if request.method == "POST":
-        form = {
-            k: request.form.get(k, "").strip()
-            for k in ("category", "subject", "description", "location", "sub_county", "priority")
-        }
+        form = {k: request.form.get(k, "").strip()
+                for k in ("category", "subject", "description", "location", "sub_county", "priority")}
         problems = []
         if form["category"] not in CATEGORIES:
             problems.append("Choose a service category.")
@@ -108,16 +88,13 @@ def detail(request_id):
     db = get_db()
     item = db.execute(
         "SELECT r.*, u.full_name, u.email, u.phone FROM service_requests r "
-        "JOIN users u ON u.id = r.user_id WHERE r.id = ?",
-        (request_id,),
-    ).fetchone()
+        "JOIN users u ON u.id = r.user_id WHERE r.id = ?", (request_id,)).fetchone()
     if not item:
         abort(404)
     if session["role"] != "admin" and item["user_id"] != session["user_id"]:
-        abort(403)  # citizens may only see their own requests
+        abort(403)                      # citizens may only see their own requests
     history = db.execute(
-        "SELECT * FROM status_history WHERE request_id = ? ORDER BY id DESC", (request_id,)
-    ).fetchall()
+        "SELECT * FROM status_history WHERE request_id = ? ORDER BY id DESC", (request_id,)).fetchall()
     return render_template("citizen/detail.html", item=item, history=history)
 
 
@@ -126,20 +103,16 @@ def detail(request_id):
 def feedback(request_id):
     """Let a citizen rate the service once their request is resolved."""
     db = get_db()
-    item = db.execute(
-        "SELECT * FROM service_requests WHERE id = ? AND user_id = ?",
-        (request_id, session["user_id"]),
-    ).fetchone()
+    item = db.execute("SELECT * FROM service_requests WHERE id = ? AND user_id = ?",
+                      (request_id, session["user_id"])).fetchone()
     if not item:
         abort(404)
     rating = request.form.get("rating", type=int)
     if item["status"] != "Resolved" or rating not in range(1, 6):
         flash("You can rate a request once it is resolved, from 1 to 5 stars.", "error")
     else:
-        db.execute(
-            "UPDATE service_requests SET rating = ?, feedback = ? WHERE id = ?",
-            (rating, request.form.get("feedback", "").strip()[:300], request_id),
-        )
+        db.execute("UPDATE service_requests SET rating = ?, feedback = ? WHERE id = ?",
+                   (rating, request.form.get("feedback", "").strip()[:300], request_id))
         db.commit()
         flash("Thank you — your feedback helps improve county services.", "success")
     return redirect(url_for("citizen.detail", request_id=request_id))
@@ -167,13 +140,10 @@ def profile():
         if error:
             flash(error, "error")
         else:
-            db.execute(
-                "UPDATE users SET password_hash = ? WHERE id = ?",
-                (generate_password_hash(new_pw), user["id"]),
-            )
+            db.execute("UPDATE users SET password_hash = ? WHERE id = ?",
+                       (generate_password_hash(new_pw), user["id"]))
             db.commit()
             flash("Password updated.", "success")
             return redirect(url_for("citizen.profile"))
-    return render_template(
-        "citizen/profile.html", user=user, stats=services.overall_stats(db, user["id"])
-    )
+    return render_template("citizen/profile.html", user=user,
+                           stats=services.overall_stats(db, user["id"]))

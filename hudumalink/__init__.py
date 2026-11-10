@@ -1,5 +1,4 @@
 """HudumaLink application factory."""
-
 import os
 
 from flask import Flask, render_template, request, session
@@ -29,6 +28,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     @app.before_request
     def _csrf_guard():
+        from flask import request
         if request.method == "POST":
             security.verify_csrf()
 
@@ -37,27 +37,16 @@ def create_app(test_config: dict | None = None) -> Flask:
         """Apply baseline browser protections to every response."""
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault(
-            "Permissions-Policy", "camera=(), microphone=(), geolocation=(self)"
-        )
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; base-uri 'self'; object-src 'none'; "
             "form-action 'self'; frame-ancestors https://*.manus.computer; "
-            "script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; "
             "connect-src 'self'",
         )
-        private_paths = (
-            "/login",
-            "/register",
-            "/admin",
-            "/dashboard",
-            "/requests",
-            "/profile",
-            "/notifications",
-        )
+        private_paths = ("/login", "/register", "/admin", "/dashboard", "/requests", "/profile", "/notifications")
         if session.get("user_id") or request.path.startswith(private_paths):
             response.headers["Cache-Control"] = "no-store"
         return response
@@ -69,26 +58,20 @@ def create_app(test_config: dict | None = None) -> Flask:
         SUB_COUNTIES=SUB_COUNTIES,
     )
     from .filters import register_filters
-
     register_filters(app)
 
     @app.context_processor
     def _inject_unread():
         """Make the unread-notification count available to the navbar."""
         if session.get("user_id") and session.get("role") == "citizen":
-            row = (
-                db.get_db()
-                .execute(
-                    "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0",
-                    (session["user_id"],),
-                )
-                .fetchone()
-            )
+            row = db.get_db().execute(
+                "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0",
+                (session["user_id"],),
+            ).fetchone()
             return {"unread_count": row[0]}
         return {"unread_count": 0}
 
     from .blueprints import admin, auth, citizen, public
-
     for blueprint in (public.bp, auth.bp, citizen.bp, admin.bp):
         app.register_blueprint(blueprint)
 
@@ -99,13 +82,11 @@ def create_app(test_config: dict | None = None) -> Flask:
         413: "That file is too large. Please upload an image smaller than 5 MB.",
     }
     for code, default in messages.items():
-
         def handler(error, code=code, default=default):
             text = getattr(error, "description", None)
             if code == 400 and text:
                 default = text
             return render_template("error.html", code=code, message=default), code
-
         app.register_error_handler(code, handler)
 
     return app

@@ -4,7 +4,6 @@ Security helpers for Huduma Link.
 The login limiter is stored in the application database rather than process
 memory so it remains effective when Vercel routes requests to new instances.
 """
-
 import hashlib
 import secrets
 import time
@@ -28,10 +27,7 @@ def verify_csrf() -> None:
     sent = request.form.get("csrf_token", "")
     expected = session.get("_csrf", "")
     if not sent or not expected or not secrets.compare_digest(sent, expected):
-        abort(
-            400,
-            description="Your form session expired. Please go back, reload the page and try again.",
-        )
+        abort(400, description="Your form session expired. Please go back, reload the page and try again.")
 
 
 # --- Access control ---------------------------------------------------------
@@ -42,7 +38,6 @@ def login_required(view):
             flash("Please sign in to continue.", "info")
             return redirect(url_for("auth.login", next=request.path))
         return view(*args, **kwargs)
-
     return wrapper
 
 
@@ -54,7 +49,6 @@ def admin_required(view):
         if session.get("role") != "admin":
             abort(403)
         return view(*args, **kwargs)
-
     return wrapper
 
 
@@ -69,7 +63,7 @@ def safe_next_url(target: str, fallback: str) -> str:
 def _bucket(value: str) -> str:
     """Hash the limiter key so email/IP values are not stored in plain text."""
     secret = current_app.config["SECRET_KEY"]
-    return hashlib.sha256(f"{secret}|{value}".encode()).hexdigest()
+    return hashlib.sha256(f"{secret}|{value}".encode("utf-8")).hexdigest()
 
 
 def _keys(email: str) -> tuple[str, str]:
@@ -82,12 +76,9 @@ def _keys(email: str) -> tuple[str, str]:
 
 def _recent_attempts(bucket: str) -> int:
     from .db import get_db
-
-    row = (
-        get_db()
-        .execute("SELECT attempts, first_at FROM login_attempts WHERE bucket = ?", (bucket,))
-        .fetchone()
-    )
+    row = get_db().execute(
+        "SELECT attempts, first_at FROM login_attempts WHERE bucket = ?", (bucket,)
+    ).fetchone()
     if not row:
         return 0
     now = time.time()
@@ -99,22 +90,18 @@ def _recent_attempts(bucket: str) -> int:
 
 
 def too_many_attempts(email: str) -> bool:
-    return any(
-        _recent_attempts(bucket) >= current_app.config["LOGIN_MAX_ATTEMPTS"]
-        for bucket in _keys(email)
-    )
+    return any(_recent_attempts(bucket) >= current_app.config["LOGIN_MAX_ATTEMPTS"]
+               for bucket in _keys(email))
 
 
 def record_failure(email: str) -> None:
     from .db import get_db
-
     now = time.time()
     db = get_db()
     for bucket in _keys(email):
         db.execute(
             "INSERT INTO login_attempts (bucket, attempts, first_at, last_at) VALUES (?, 1, ?, ?) "
-            "ON CONFLICT(bucket) DO UPDATE SET attempts = login_attempts.attempts + 1, "
-            "last_at = excluded.last_at",
+            "ON CONFLICT(bucket) DO UPDATE SET attempts = login_attempts.attempts + 1, last_at = excluded.last_at",
             (bucket, now, now),
         )
     db.commit()
@@ -122,7 +109,6 @@ def record_failure(email: str) -> None:
 
 def clear_failures(email: str) -> None:
     from .db import get_db
-
     db = get_db()
     for bucket in _keys(email):
         db.execute("DELETE FROM login_attempts WHERE bucket = ?", (bucket,))
@@ -140,6 +126,6 @@ def looks_like_image(file_storage, ext: str) -> bool:
     signatures = IMAGE_SIGNATURES.get(ext, ())
     if not any(head.startswith(sig) for sig in signatures):
         return False
-    if ext == "webp":  # RIFF container must say WEBP
+    if ext == "webp":                       # RIFF container must say WEBP
         return head[8:12] == b"WEBP"
     return True

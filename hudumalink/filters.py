@@ -1,5 +1,4 @@
 """Jinja filters that turn raw database values into friendly text."""
-
 from datetime import datetime, timezone
 
 from markupsafe import Markup
@@ -21,7 +20,6 @@ def register_filters(app):
         if not value:
             return "—"
         from datetime import timedelta
-
         return (_dt(value) + timedelta(hours=3)).strftime("%d %b %Y, %H:%M")
 
     @app.template_filter("ago")
